@@ -19,7 +19,7 @@ link_directories(
     ${CMAKE_SOURCE_DIR}/libs64/lib
 )
 
-add_executable(${PROJECT_NAME} src/main.cpp "src/engine/logger.hpp")
+add_executable(${PROJECT_NAME} src/main.cpp)
 
 set(Libs
     bass.lib
@@ -60,6 +60,12 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         $<TARGET_FILE_DIR:${PROJECT_NAME}>
     COMMAND ${CMAKE_COMMAND} -E copy
         "${CMAKE_SOURCE_DIR}/libs64/dll/libpng16d.dll"
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_SOURCE_DIR}/libs64/dll/zlibd1.dll"
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_SOURCE_DIR}/libs64/dll/zlib1.dll"
         $<TARGET_FILE_DIR:${PROJECT_NAME}>
     COMMAND ${CMAKE_COMMAND} -E copy
         "${CMAKE_SOURCE_DIR}/libs64/dll/brotlicommon.dll"

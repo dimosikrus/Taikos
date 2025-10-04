@@ -9,6 +9,7 @@ enum class GameState : uint8_t {
     MenuSongSelection,
     GamePlaying,
     GamePause,
+    GameResults,
     SettingsMain,
     SettingsAudio // not usable
 };

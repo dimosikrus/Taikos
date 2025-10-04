@@ -11,6 +11,7 @@ using fn = int;
 // #include "menu/menu.hpp"
 #include "engine/menu/menu.hpp"
 #include "engine/game/game.hpp"
+#include "engine/game/resultScreen.hpp"
 #include "engine/logger.hpp"
 
 static bool spriteCollision(const sf::Sprite& sprite, const sf::Vector2f position) {
@@ -63,9 +64,11 @@ static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
             if (specialState == SpecialState::Alt) {
                 if (scrolled > 0) {
                     audio.upAudioVol();
+                    audio.upSoundsVol();
                 }
                 else if (scrolled < 0) {
                     audio.downAudioVol();
+                    audio.downSoundsVol();
                 }
             }
         }
@@ -76,8 +79,39 @@ static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
         switch(code) {
         //case sf::Keyboard::Key::Escape: window.close(); break;
             case sf::Keyboard::Key::Escape:
-                if (gameState == GameState::MenuSongSelection) { gameState = GameState::MenuIntro; audio.stopAudio(); break; }
-                if (gameState == GameState::GamePlaying) { gameState = GameState::MenuSongSelection; break; }
+                if (gameState == GameState::MenuSongSelection) { 
+                    gameState = GameState::MenuIntro;
+                    audio.stopAudio();
+                    break;
+                }
+                if (gameState == GameState::GamePlaying) {
+                    gameState = GameState::GamePause;
+                    if (!audio.paused()) {
+                        audio.pauseAudio();
+                    }
+                    break;
+                }
+                if (gameState == GameState::GamePause) {
+                    gameState = GameState::GamePlaying;
+                    if (audio.paused()) {
+                        audio.unPauseAudio();
+                    }
+                    break;
+                }
+                if (gameState == GameState::GameResults) {
+                    gameState = GameState::MenuSongSelection;
+                    break;
+                }
+                break;
+            case sf::Keyboard::Key::Q:
+                gameState = GameState::MenuSongSelection;
+                if (audio.paused()) {
+                    audio.unPauseAudio();
+                }
+                break;
+            case sf::Keyboard::Key::E:
+                audio.resetPos();
+                game.reset();
                 break;
             case sf::Keyboard::Key::D:
                 audio.playSound("hitZ");
@@ -146,21 +180,13 @@ fn main() {
 
     sf::VideoMode video_mode(sf::Vector2u(1280,720));
     constexpr auto window_style = sf::Style::Titlebar | sf::Style::Close;
-    sf::RenderWindow window(video_mode, "SFML Title", window_style);
+    sf::RenderWindow window(video_mode, "Taikos Loading", window_style);
     sf::Clock clock;
     debug.log("WINDOW INITIALIZED");
 
-    sf::Font BASICFONT(get_executable_path() / "assets\\arial.ttf");
-
-    sf::Texture texture;
-    if (!texture.loadFromFile(get_executable_path() / "assets\\image.png")) {
-        std::cout << "Error load texture" << std::endl;
-        return -1;
-    }
-    sf::Sprite testsprite(texture);
-    testsprite.setScale(sf::Vector2f(.35f,3.f));
-    debug.log("testsprite INITIALIZED");
-
+    sf::Font BASICFONT(get_executable_path() / "assets\\arial.ttf");;
+    
+    GameState prevState = gameState;
     float fps = 0;
     float dt = 1;
     int fpsDelayCounter = 0;
@@ -169,19 +195,20 @@ fn main() {
     OsuFile osuempty;
     Game game(audio, osuempty, BASICFONT);
     SongSelectionMenu ssm(BASICFONT, gameState, audio, game);
+    ResultScreen results(game, BASICFONT);
     sf::Text fpsText(BASICFONT, "FPS: 0");
     fpsText.setPosition({ 15.f, 15.f });
     debug.log("VARIABLES INITIALIZED");
 
     gameState = GameState::MenuIntro;
     debug.log("Window events handler running...");
+    window.setTitle("Taikos Idle");
     while (window.isOpen()) {
         clock.start();
         while (std::optional<sf::Event> event = window.pollEvent()) events(event, window, mousePosition, audio, gameState, specialState, flmenu, ssm, game);
         //audio.updateEngine();
         window.clear(sf::Color::Black);
 
-        window.draw(testsprite);
         // std::cout << mousePosition.x << " | " << mousePosition.y << '\n';
         if (fpsDelayCounter > 500) {
             std::ostringstream oss;
@@ -196,14 +223,44 @@ fn main() {
             case GameState::Loading:
                 break;
             case GameState::MenuIntro:
+                if (prevState != gameState) {
+                    prevState = gameState;
+                    window.setTitle("Taikos Idle");
+                }
                 flmenu.draw(window, mousePosition);
                 break;
             case GameState::MenuSongSelection:
+                if (prevState != gameState) {
+                    prevState = gameState;
+                    window.setTitle("Taikos Song Selection");
+                }
                 ssm.show(window, mousePosition);
                 break;
             case GameState::GamePlaying:
+                if (!audio.checkAudioIsActive()) {
+                    gameState = GameState::GameResults;
+                }
+                if (prevState != gameState) {
+                    prevState = gameState;
+                    window.setTitle("Taikos " + game.getSelected());
+                }
                 game.update();
                 game.show(window);
+                break;
+            case GameState::GamePause:
+                if (prevState != gameState) {
+                    prevState = gameState;
+                    window.setTitle("Taikos Pause");
+                }
+                game.show(window);
+                audio.pauseAudio();
+                break;
+            case GameState::GameResults:
+                if (prevState != gameState) {
+                    prevState = gameState;
+                    window.setTitle("Taikos Results");
+                }
+                results.draw(window);
                 break;
             case GameState::SettingsMain: [[fallthrough]];
             case GameState::SettingsAudio: [[fallthrough]];

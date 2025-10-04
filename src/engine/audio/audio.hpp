@@ -105,6 +105,9 @@ public:
                     )
                 ) * 1000);
     }
+    void ResetPos() {
+        BASS_ChannelSetPosition(stream, 0, BASS_POS_BYTE);
+    }
     void Play() {
         BASS_ChannelPlay(stream, FALSE);
     }
@@ -130,8 +133,9 @@ private:
     DefaultSounds defaultSounds;
     Sounds sounds;
     Music music;
-    float musicVolume = 1.f;
-    float soundsVolume = 1.f;
+    float musicVolume = .4f;
+    float soundsVolume = .3f;
+    bool pausedAudio = false;
 public:
     Audio() {
         if(!BASS_Init(-1, 44100, 0, nullptr, nullptr)) 
@@ -142,9 +146,12 @@ public:
         for (auto [key, value] : defaultSounds.getSounds()) {
             sounds.load(key, value);
         }
-        setSoundsVolume(.2f);
+        setSoundsVolume(soundsVolume);
     }
     int getPos() const { return music.getPos(); }
+    void resetPos() {
+        music.ResetPos();
+    }
     void playSound(const std::string& key) {
         sounds.playSound(key);
     }
@@ -166,7 +173,6 @@ public:
     }
     void playAudio(const fs::path& path) {
         music.load(path);
-        setAudioVolume(0.4f);
         music.SetVolume(musicVolume);
         music.Play();
     }
@@ -176,6 +182,7 @@ public:
     void upAudioVol() {
         if(musicVolume < 1.f) {
             musicVolume += .1f;
+            setAudioVolume(musicVolume);
             music.SetVolume(musicVolume);
         }
     }
@@ -188,8 +195,20 @@ public:
     bool checkAudioIsActive() {
         return music.checkActive();
     }
+    bool paused() {
+        return pausedAudio;
+    }
+    void unPauseAudio() {
+        if (pausedAudio) {
+            pausedAudio = false;
+            music.Play();
+        }
+    }
     void pauseAudio() {
-        music.Pause();
+        if (!pausedAudio) {
+            pausedAudio = true;
+            music.Pause();
+        }
     }
     void stopAudio() {
         music.Stop();

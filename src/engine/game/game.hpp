@@ -62,16 +62,6 @@ class Game {
 	sf::RectangleShape x300Rect;
 	bool ofScanning = true;
 	std::vector<Taps> taps;
-	int REDS = 0,
-		BLUES = 0,
-		OTHERS = 0;
-	int x0 = 0,
-		x50 = 0,
-		x100 = 0,
-		x300 = 0;
-	int combo = 0,
-		comboMissBuffer = 0,
-		score = 0;
 	void checkHit(int HitObjectTime, int TapTime) {
 		if (TapTime > HitObjectTime - 20 && TapTime < HitObjectTime + 20) {
 			x300++;
@@ -92,12 +82,26 @@ class Game {
 		return;
 	}
 	void checkCombo() {
+		if (maxCombo < combo) {
+			maxCombo = combo;
+		}
 		if (comboMissBuffer < x0) {
 			combo = 0;
 			comboMissBuffer = x0;
 		}
 	}
 public:
+	int REDS = 0,
+		BLUES = 0,
+		OTHERS = 0;
+	int x0 = 0,
+		x50 = 0,
+		x100 = 0,
+		x300 = 0;
+	int combo = 0,
+		comboMissBuffer = 0,
+		maxCombo = 0,
+		score = 0;
 	Game(Audio& audio, OsuFile& osufile, sf::Font& font) : audio(audio), osufile(osufile), font(font), text1(font), text2(font), text3(font),
 			centerRect({ 4.f, 120.f }), x0Rect({ 140.f, 40.f }), x50Rect({ 110.f, 40.f }), x100Rect({ 80.f, 40.f }), x300Rect({ 40.f, 40.f }) {
 		centerRect.setFillColor(sf::Color::Magenta);
@@ -129,6 +133,21 @@ public:
 		window.draw(text1);
 		window.draw(text2);
 		window.draw(text3);
+	}
+	void reset() {
+		offset = 0;
+		ofScanning = true;
+		REDS = 0;
+		BLUES = 0;
+		OTHERS = 0;
+		x0 = 0;
+		x50 = 0;
+		x100 = 0;
+		x300 = 0;
+		combo = 0;
+		comboMissBuffer = 0;
+		maxCombo = 0;
+		score = 0;
 	}
 	void update() {
 		checkCombo();
@@ -222,22 +241,18 @@ public:
 		}
 		taps.clear();
 	}
+	std::string getSelected() {
+		OsuFile& osf = this->osufile;
+		std::ostringstream oss;
+		oss << osf.artist << " - " << osf.title << "[" << osf.version << "] (" << osf.creator << ")\n";
+		return oss.str();
+	}
 	void load(OsuFile& osufile) {
 		std::cout << "Selected: " << osufile.version << '\n';
 		this->osufile = osufile;
 		hitobjects = std::move(parseHitObjects(osufile.filepath));
-		offset = 0;
-		ofScanning = true;
-		REDS = 0;
-		BLUES = 0;
-		OTHERS = 0;
-		x0 = 0;
-		x50 = 0;
-		x100 = 0;
-		x300 = 0;
-		combo = 0;
-		comboMissBuffer = 0;
-		score = 0;
+		//
+		reset();
 		//
 		int countOfCircles = 0;
 		int countOfSliders = 0;
