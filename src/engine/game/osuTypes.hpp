@@ -31,6 +31,12 @@ enum class HitSound : uint8_t {
     Clap = 1 << 3
 };
 
+struct Taps {
+    int time;
+    HitSound hs;
+    bool hitted = false;
+};
+
 static inline HitSound operator|(const HitSound a, const HitSound b) {
     return static_cast<HitSound>(static_cast<uint8_t>(a) | static_cast<uint8_t>(b));
 }
@@ -51,6 +57,81 @@ struct HitObject {
     int length = 0; // Slider;
 };
 
+
+//std::ostream& operator<<(std::ostream& os, const Type type) {
+//    int d = 0;
+//    if (type == Type::None) os << "Type.None";
+//    else {
+//        os << "Type.";
+//        if ((type & Type::HitCircle) != Type::None) {
+//            os << (d != 0 ? "|" : "") << "HitCircle";
+//            d++;
+//        }
+//        if ((type & Type::Slider) != Type::None) {
+//            os << (d != 0 ? "|" : "") << "Slider";
+//            d++;
+//        }
+//        if ((type & Type::NewCombo) != Type::None) {
+//            d++;
+//            os << (d != 0 ? "|" : "") << "NewCombo";
+//        }
+//        if ((type & Type::Spinner) != Type::None) {
+//            os << (d != 0 ? "|" : "") << "Spinner";
+//            d++;
+//        }
+//        if ((type & Type::Skip1) != Type::None) {
+//            os << (d != 0 ? "|" : "") << "Skip1";
+//            d++;
+//        }
+//        if ((type & Type::Skip2) != Type::None) {
+//            os << (d != 0 ? "|" : "") << "Skip2";
+//            d++;
+//        }
+//        if ((type & Type::Skip3) != Type::None) {
+//            os << (d != 0 ? "|" : "") << "Skip3";
+//            d++;
+//        }
+//    }
+//    return os;
+//}
+//
+//std::ostream& operator<<(std::ostream& os, const HitSound hitSound) {
+//    int d = 0;
+//    if (hitSound == HitSound::None) os << "HitSound.None";
+//    else {
+//        os << "HitSound.";
+//        if ((hitSound & HitSound::Normal) != HitSound::None) {
+//            os << (d != 0 ? "|" : "") << "Normal";
+//            d++;
+//        }
+//        if ((hitSound & HitSound::Whistle) != HitSound::None) {
+//            os << (d != 0 ? "|" : "") << "Whistle";
+//            d++;
+//        }
+//        if ((hitSound & HitSound::Finish) != HitSound::None) {
+//            os << (d != 0 ? "|" : "") << "Finish";
+//            d++;
+//        }
+//        if ((hitSound & HitSound::Clap) != HitSound::None) {
+//            os << (d != 0 ? "|" : "") << "Clap";
+//            d++;
+//        }
+//    }
+//    return os;
+//}
+//
+//std::ostream& operator<<(std::ostream& os, const HitObject& hobj) {
+//    os << "HitObject("
+//        << "hitted=" << (hobj.hitted ? "true" : "false")
+//        << ", next=" << (hobj.next ? "true" : "false")
+//        << ", time=" << hobj.time
+//        << ", " << hobj.type
+//        << ", " << hobj.hitSound
+//        << ", length=" << hobj.length
+//        << ")";
+//    return os;
+//}
+
 struct OsuFile {
     fs::path filepath;
     std::string audioFileName;
@@ -64,9 +145,4 @@ struct OsuFile {
     std::string version;
 
     std::vector<HitObject> hitobjects;
-
-    // hp
-    // cs
-    // od
-    // ar
 };

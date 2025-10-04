@@ -142,7 +142,7 @@ public:
         for (auto [key, value] : defaultSounds.getSounds()) {
             sounds.load(key, value);
         }
-        setSoundsVolume(.4f);
+        setSoundsVolume(.2f);
     }
     int getPos() const { return music.getPos(); }
     void playSound(const std::string& key) {

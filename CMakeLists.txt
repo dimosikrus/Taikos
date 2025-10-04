@@ -19,7 +19,7 @@ link_directories(
     ${CMAKE_SOURCE_DIR}/libs64/lib
 )
 
-add_executable(${PROJECT_NAME} src/main.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp "src/engine/logger.hpp")
 
 set(Libs
     bass.lib
@@ -37,7 +37,12 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${CMAKE_SOURCE_DIR}/assets"
         "$<TARGET_FILE_DIR:${PROJECT_NAME}>/assets"
-    COMMENT "Копируем ASSETS в выходную директорию\n"
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/Songs"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/Songs"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/Songs"
+    COMMENT "Копируем ASSETS & SONGS в выходную директорию\n"
 )
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
@@ -57,7 +62,19 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         "${CMAKE_SOURCE_DIR}/libs64/dll/libpng16d.dll"
         $<TARGET_FILE_DIR:${PROJECT_NAME}>
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_SOURCE_DIR}/libs64/dll/zlibd1.dll"
+        "${CMAKE_SOURCE_DIR}/libs64/dll/brotlicommon.dll"
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_SOURCE_DIR}/libs64/dll/brotlidec.dll"
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_SOURCE_DIR}/libs64/dll/bz2.dll"
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_SOURCE_DIR}/libs64/dll/freetype.dll"
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_SOURCE_DIR}/libs64/dll/libpng16.dll"
         $<TARGET_FILE_DIR:${PROJECT_NAME}>
     COMMENT "Копируем дополнительные файлы в выходную директорию\n"
 )
