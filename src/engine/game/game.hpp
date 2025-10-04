@@ -64,44 +64,38 @@ class Game {
 	std::vector<Taps> taps;
 	void checkHit(int HitObjectTime, int TapTime) {
 		if (TapTime > HitObjectTime - 20 && TapTime < HitObjectTime + 20) {
-			x300++;
-			score += combo != 0 ? 300 * combo : 300;
+			score.x300++;
+			score.score += score.combo != 0 ? 300 * score.combo : 300;
 			return;
 		}
 		if (TapTime > HitObjectTime - 40 && TapTime < HitObjectTime + 40) {
-			x100++;
-			score += combo != 0 ? 100 * combo : 100;
+			score.x100++;
+			score.score += score.combo != 0 ? 100 * score.combo : 100;
 			return;
 		}
 		if (TapTime > HitObjectTime - 55 && TapTime < HitObjectTime + 55) {
-			x50++;
-			score += combo != 0 ? 50 * combo : 50;
+			score.x50++;
+			score.score += score.combo != 0 ? 50 * score.combo : 50;
 			return;
 		}
-		x0++;
+		score.x0++;
 		return;
 	}
 	void checkCombo() {
-		if (maxCombo < combo) {
-			maxCombo = combo;
+		if (score.maxCombo < score.combo) {
+			score.maxCombo = score.combo;
 		}
-		if (comboMissBuffer < x0) {
-			combo = 0;
-			comboMissBuffer = x0;
+		if (comboMissBuffer < score.x0) {
+			score.combo = 0;
+			comboMissBuffer = score.x0;
 		}
 	}
 public:
 	int REDS = 0,
 		BLUES = 0,
 		OTHERS = 0;
-	int x0 = 0,
-		x50 = 0,
-		x100 = 0,
-		x300 = 0;
-	int combo = 0,
-		comboMissBuffer = 0,
-		maxCombo = 0,
-		score = 0;
+	int comboMissBuffer = 0;
+	Score score;
 	Game(Audio& audio, OsuFile& osufile, sf::Font& font) : audio(audio), osufile(osufile), font(font), text1(font), text2(font), text3(font),
 			centerRect({ 4.f, 120.f }), x0Rect({ 140.f, 40.f }), x50Rect({ 110.f, 40.f }), x100Rect({ 80.f, 40.f }), x300Rect({ 40.f, 40.f }) {
 		centerRect.setFillColor(sf::Color::Magenta);
@@ -140,14 +134,14 @@ public:
 		REDS = 0;
 		BLUES = 0;
 		OTHERS = 0;
-		x0 = 0;
-		x50 = 0;
-		x100 = 0;
-		x300 = 0;
-		combo = 0;
+		score.x0 = 0;
+		score.x50 = 0;
+		score.x100 = 0;
+		score.x300 = 0;
+		score.combo = 0;
 		comboMissBuffer = 0;
-		maxCombo = 0;
-		score = 0;
+		score.maxCombo = 0;
+		score.score = 0;
 	}
 	void update() {
 		checkCombo();
@@ -156,10 +150,10 @@ public:
 		oss1 << "R/B/O " << REDS << "/" << BLUES << "/" << OTHERS;
 		text1.setString(oss1.str());
 		std::ostringstream oss2;
-		oss2 << "x0/x50/x100/x300 " << x0 << "/" << x50 << "/" << x100 << "/" << x300;
+		oss2 << "x0/x50/x100/x300 " << score.x0 << "/" << score.x50 << "/" << score.x100 << "/" << score.x300;
 		text2.setString(oss2.str());
 		std::ostringstream oss3;
-		oss3 << "x/s " << combo << "/" << score;
+		oss3 << "x/s " << score.combo << "/" << score.score;
 		text3.setString(oss3.str());
 
 		int audioPos = audio.getPos();
@@ -187,7 +181,7 @@ public:
 								(tap.hs & HitSound::Whistle) != HitSound::None) {
 							hobj.hitted = true;
 							BLUES++;
-							combo++;
+							score.combo++;
 							tap.hitted = true;
 							checkHit(hobj.time, tap.time);
 						}
@@ -196,7 +190,7 @@ public:
 								(tap.hs & HitSound::Normal) != HitSound::None) {
 							hobj.hitted = true;
 							REDS++;
-							combo++;
+							score.combo++;
 							tap.hitted = true;
 							checkHit(hobj.time, tap.time);
 						}
@@ -204,7 +198,7 @@ public:
 					else {
 						hobj.hitted = true;
 						OTHERS++;
-						combo++;
+						score.combo++;
 						tap.hitted = true;
 						checkHit(hobj.time, tap.time);
 					}
@@ -214,7 +208,7 @@ public:
 
 			if (!hobj.hitted && hobj.time < audioPos - 150) {
 				hobj.hitted = true;
-				x0++;
+				score.x0++;
 			}
 
 			float a = static_cast<float>(audioPos);

@@ -181,12 +181,16 @@ fn main() {
     sf::VideoMode video_mode(sf::Vector2u(1280,720));
     constexpr auto window_style = sf::Style::Titlebar | sf::Style::Close;
     sf::RenderWindow window(video_mode, "Taikos Loading", window_style);
+    sf::Vector2f windowFSize({static_cast<float>(window.getSize().x),static_cast<float>(window.getSize().y)});
     sf::Clock clock;
     debug.log("WINDOW INITIALIZED");
 
     sf::Font BASICFONT(get_executable_path() / "assets\\arial.ttf");;
     
     GameState prevState = gameState;
+    sf::RectangleShape pauseRect(windowFSize);
+    pauseRect.setPosition({ 0, 0 });
+    pauseRect.setFillColor(sf::Color(1,1,1,152));
     float fps = 0;
     float dt = 1;
     int fpsDelayCounter = 0;
@@ -253,6 +257,7 @@ fn main() {
                     window.setTitle("Taikos Pause");
                 }
                 game.show(window);
+                window.draw(pauseRect);
                 audio.pauseAudio();
                 break;
             case GameState::GameResults:

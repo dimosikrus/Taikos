@@ -37,6 +37,16 @@ struct Taps {
     bool hitted = false;
 };
 
+struct Score {
+    int x0 = 0;
+    int x50 = 0;
+    int x100 = 0;
+    int x300 = 0;
+    int combo = 0;
+    int maxCombo = 0;
+    int score = 0;
+};
+
 static inline HitSound operator|(const HitSound a, const HitSound b) {
     return static_cast<HitSound>(static_cast<uint8_t>(a) | static_cast<uint8_t>(b));
 }
