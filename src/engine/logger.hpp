@@ -23,6 +23,7 @@ struct Ansi {
         BRIGHT_CYAN,
         BRIGHT_WHITE
     };
+
     static inline std::string RESET = "\033[0m";
     static inline std::string BLACK = "\033[30m";
     static inline std::string RED = "\033[31m";
@@ -50,8 +51,7 @@ enum class LogLevel {
 };
 
 class Logger {
-    LogLevel level;
-    std::string getT() {
+    std::string getT(LogLevel level) {
         switch (level) {
         case LogLevel::INFO: return Ansi::CYAN;
         case LogLevel::WARN: return Ansi::YELLOW;
@@ -60,7 +60,8 @@ class Logger {
         default: return Ansi::CYAN;
         }
     }
-    std::string getD() {
+
+    std::string getD(LogLevel level) {
         switch (level) {
         case LogLevel::INFO: return "[INFO]" + Ansi::BRIGHT_CYAN;
         case LogLevel::WARN: return "[WARN]" + Ansi::BRIGHT_YELLOW;
@@ -69,7 +70,8 @@ class Logger {
         default: return Ansi::CYAN;
         }
     }
-    std::string getL() {
+
+    std::string getL(LogLevel level) {
         switch (level) {
         case LogLevel::INFO: return "[INFO]";
         case LogLevel::WARN: return "[WARN]";
@@ -78,6 +80,7 @@ class Logger {
         default: return Ansi::CYAN;
         }
     }
+
     std::string getA(Ansi::Color color) {
         switch (color)
         {
@@ -101,6 +104,7 @@ class Logger {
         default: return Ansi::RESET;
         }
     }
+
     std::string getCT() {
         time_t now = time(0);
         tm* ltm = localtime(&now);
@@ -109,11 +113,13 @@ class Logger {
         return std::string(buffer);
     }
 public:
-    Logger(LogLevel level) : level(level) {}
-    void log(const std::string text) {
-        std::cout << getT() << "[" << getCT() << "] " << getD() << " " << text << Ansi::RESET << '\n';
+    Logger() = default;
+
+    void log(LogLevel level, const std::string text) {
+        std::cout << getT(level) << "[" << getCT() << "] " << getD(level) << " " << text << Ansi::RESET << '\n';
     }
-    void log(const std::string text, Ansi::Color color) {
-        std::cout << getT() << "[" << getCT() << "] " << getL() << " " << getA(color) << text << Ansi::RESET << '\n';
+
+    void log(LogLevel level, const std::string text, Ansi::Color color) {
+        std::cout << getT(level) << "[" << getCT() << "] " << getL(level) << " " << getA(color) << text << Ansi::RESET << '\n';
     }
 };

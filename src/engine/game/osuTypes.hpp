@@ -57,13 +57,9 @@ static inline HitSound operator&(const HitSound a, const HitSound b) {
 struct HitObject {
     bool hitted = false;
     bool next = false;
-    //int x;
-    //int y;
     int time;
     Type type;
     HitSound hitSound;
-    //objectParams;
-    //slides (Slider);
     int length = 0; // Slider;
 };
 

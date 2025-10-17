@@ -108,6 +108,9 @@ public:
     void ResetPos() {
         BASS_ChannelSetPosition(stream, 0, BASS_POS_BYTE);
     }
+    void SetPos(double pos) {
+        BASS_ChannelSetPosition(stream, BASS_ChannelSeconds2Bytes(stream, pos), BASS_POS_BYTE);
+    }
     void Play() {
         BASS_ChannelPlay(stream, FALSE);
     }
@@ -136,6 +139,7 @@ private:
     float musicVolume = .4f;
     float soundsVolume = .3f;
     bool pausedAudio = false;
+    int audioOffset = 0;
 public:
     Audio() {
         if(!BASS_Init(-1, 44100, 0, nullptr, nullptr)) 
@@ -152,6 +156,13 @@ public:
     void resetPos() {
         music.ResetPos();
     }
+    void setPos(double pos) {
+        music.SetPos(pos);
+    }
+    void setOffset(int offset) {
+        audioOffset = offset;
+    }
+    int getOffset() { return audioOffset; }
     void playSound(const std::string& key) {
         sounds.playSound(key);
     }

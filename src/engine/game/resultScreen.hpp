@@ -5,6 +5,15 @@
 #include <SFML/Graphics.hpp>
 #include "game.hpp"
 
+struct ResultRows {
+	int x300;
+	int x100;
+	int x50;
+	int x0;
+	int xMaxCombo;
+	int xScore;
+};
+
 class ResultScreen {
 	sf::Font& font;
 	sf::Text xScore;
@@ -14,8 +23,9 @@ class ResultScreen {
 	sf::Text xMiss;
 	sf::Text xMaxCombo;
 public:
-	ResultScreen(Game& game, sf::Font& font) : font(font), xScore(font),
-			x300(font), x100(font), x50(font), xMiss(font), xMaxCombo(font) {
+	ResultScreen(sf::Font& font) : font(font), xScore(font, "Score 0"),
+			x300(font, "x300 0"), x100(font, "x100 0"), x50(font, "x50 0"),
+			xMiss(font, "xMiss 0"), xMaxCombo(font, "MaxCombo 0") {
 
 		xScore.setPosition({ 20.f, 78.f });
 		x300.setPosition({ 20.f, 140.f });
@@ -30,14 +40,19 @@ public:
 		x50.setCharacterSize(24u);
 		xMiss.setCharacterSize(24u);
 		xMaxCombo.setCharacterSize(28u);
-
-		xScore.setString("Score " + std::to_string(game.score.score));
-		x300.setString("x300 " + std::to_string(game.score.x300));
-		x100.setString("x100 " + std::to_string(game.score.x100));
-		x50.setString("x50 " + std::to_string(game.score.x50));
-		xMiss.setString("xMiss " + std::to_string(game.score.x0));
-		xMaxCombo.setString("Max Combo " + std::to_string(game.score.maxCombo));
 	}
+
+	void updateRows(ResultRows resultRows) {
+		ResultRows rr{};
+		rr = std::move(resultRows);
+		xScore.setString(	"Score "	+ rr.xScore);
+		x300.setString(		"x300 "		+ rr.x300);
+		x100.setString(		"x100 "		+ rr.x100);
+		x50.setString(		"x50 "		+ rr.x50);
+		xMiss.setString(	"xMiss "	+ rr.x0);
+		xMaxCombo.setString("Max Combo "+ rr.xMaxCombo);
+	}
+
 	void draw(sf::RenderWindow& window) {
 		window.draw(xScore);
 		window.draw(x300);

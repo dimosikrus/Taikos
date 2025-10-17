@@ -2,27 +2,12 @@
 
 #include <iostream>
 #include <SFML/Graphics.hpp>
-//#include <unordered_map>
-//#include <vector>
-//#include <functional>
 #include <deque>
 #include <memory>
 #include "../audio/audio.hpp"
+#include "../gamestates.hpp"
 #include "osuTypes.hpp"
-
-//#include <type_traits>
-//template<typename T>
-//	requires std::is_enum_v<T>
-//T operator|(T lhs, T rhs) {
-//	using Underlying = std::underlying_type_t<T>;
-//	return static_cast<T>(static_cast<Underlying>(lhs) | static_cast<Underlying>(rhs));
-//}
-//template<typename T>
-//	requires std::is_enum_v<T>
-//T operator&(T lhs, T rhs) {
-//	using Underlying = std::underlying_type_t<T>;
-//	return static_cast<T>(static_cast<Underlying>(lhs) & static_cast<Underlying>(rhs));
-//}
+#include "resultScreen.hpp"
 
 class DrawableObj {
 	float radius;
@@ -39,6 +24,7 @@ public:
 		circlefill.setPosition(sf::Vector2f(pos.x, pos.y - radius / 2.f));
 		circleborder.setPosition(sf::Vector2f(pos.x, pos.y - radius / 2.f));
 	}
+
 	void draw(sf::RenderWindow& window) {
 		window.draw(circlefill);
 		window.draw(circleborder);
@@ -47,10 +33,16 @@ public:
 
 class Game {
 	OsuFile& osufile;
+	GameState& localState;
 	int offset = 0;
 	std::deque<DrawableObj> drawable;
 	std::vector<HitObject> hitobjects;
 	Audio& audio;
+	int startOffset = 0;
+	bool audioStarted = false;
+	bool atimerStarted = false;
+	bool gameIsRunning = true;
+	sf::Clock prevTimer;
 	sf::Font& font;
 	sf::Text text1;
 	sf::Text text2;
@@ -60,35 +52,53 @@ class Game {
 	sf::RectangleShape x50Rect;
 	sf::RectangleShape x100Rect;
 	sf::RectangleShape x300Rect;
+	ResultScreen& localResults;
 	bool ofScanning = true;
 	std::vector<Taps> taps;
+
 	void checkHit(int HitObjectTime, int TapTime) {
 		if (TapTime > HitObjectTime - 20 && TapTime < HitObjectTime + 20) {
 			score.x300++;
 			score.score += score.combo != 0 ? 300 * score.combo : 300;
 			return;
 		}
+
 		if (TapTime > HitObjectTime - 40 && TapTime < HitObjectTime + 40) {
 			score.x100++;
 			score.score += score.combo != 0 ? 100 * score.combo : 100;
 			return;
 		}
+
 		if (TapTime > HitObjectTime - 55 && TapTime < HitObjectTime + 55) {
 			score.x50++;
 			score.score += score.combo != 0 ? 50 * score.combo : 50;
 			return;
 		}
+
 		score.x0++;
 		return;
 	}
+
 	void checkCombo() {
 		if (score.maxCombo < score.combo) {
 			score.maxCombo = score.combo;
 		}
+
 		if (comboMissBuffer < score.x0) {
 			score.combo = 0;
 			comboMissBuffer = score.x0;
 		}
+	}
+
+	void setResults() {
+		ResultRows rr{};
+		rr.x300 = score.x300;
+		rr.x100 = score.x100;
+		rr.x50 = score.x50;
+		rr.x0 = score.x0;
+		rr.xMaxCombo = score.maxCombo;
+		rr.xScore = score.score;
+		localResults.updateRows(rr);
 	}
 public:
 	int REDS = 0,
@@ -96,8 +106,9 @@ public:
 		OTHERS = 0;
 	int comboMissBuffer = 0;
 	Score score;
-	Game(Audio& audio, OsuFile& osufile, sf::Font& font) : audio(audio), osufile(osufile), font(font), text1(font), text2(font), text3(font),
-			centerRect({ 4.f, 120.f }), x0Rect({ 140.f, 40.f }), x50Rect({ 110.f, 40.f }), x100Rect({ 80.f, 40.f }), x300Rect({ 40.f, 40.f }) {
+
+	Game(Audio& audio, OsuFile& osufile, sf::Font& font, ResultScreen& results, GameState& state) : audio(audio), osufile(osufile), font(font), text1(font), text2(font), text3(font),
+			centerRect({ 4.f, 120.f }), x0Rect({ 140.f, 40.f }), x50Rect({ 110.f, 40.f }), x100Rect({ 80.f, 40.f }), x300Rect({ 40.f, 40.f }), localResults(results), localState(state) {
 		centerRect.setFillColor(sf::Color::Magenta);
 		x0Rect.setFillColor(sf::Color::Red);
 		x50Rect.setFillColor(sf::Color::Yellow);
@@ -112,9 +123,11 @@ public:
 		text2.setPosition({ 15.f, 65.f });
 		text3.setPosition({ 400.f, 15.f });
 	};
+
 	void pushTap(Taps tapz) {
 		taps.emplace_back(tapz);
 	}
+
 	void show(sf::RenderWindow& window) {
 		window.draw(x0Rect);
 		window.draw(x50Rect);
@@ -128,6 +141,9 @@ public:
 		window.draw(text2);
 		window.draw(text3);
 	}
+
+	bool Running() const { return gameIsRunning;  }
+
 	void reset() {
 		offset = 0;
 		ofScanning = true;
@@ -142,9 +158,54 @@ public:
 		comboMissBuffer = 0;
 		score.maxCombo = 0;
 		score.score = 0;
+		audioStarted = false;
+		atimerStarted = false;
+		for (auto& hobj : hitobjects) {
+			hobj.hitted = false;
+			hobj.next = false;
+		}
 	}
+
 	void update() {
+		if (audio.getPos() + 200 > hitobjects.at(hitobjects.size() - 1).time) {
+			gameIsRunning = false;
+			std::cout << "Map is End." << "\n";
+			localState = GameState::GameResults;
+			setResults();
+		}
+
+		if (startOffset <= 3000) {
+			if (!atimerStarted) {
+				if (audio.checkAudioIsActive()) {
+					audio.stopAudio();
+				}
+				gameIsRunning = true;
+				prevTimer.start();
+				atimerStarted = true;
+			}
+
+			if (prevTimer.getElapsedTime().asMilliseconds() >= startOffset && !audioStarted) {
+				prevTimer.stop();
+				prevTimer.reset();
+				audio.playAudio(osufile.filepath.parent_path() / osufile.audioFileName);
+				audioStarted = true;
+			}
+		}
+
+		else if (startOffset >= 3000) {
+			if (!audioStarted) {
+				gameIsRunning = true;
+				if (audio.checkAudioIsActive()) {
+					audio.stopAudio();
+				}
+				audio.playAudio(osufile.filepath.parent_path() / osufile.audioFileName);
+				audio.setPos(static_cast<double>(startOffset)/1000);
+				audioStarted = true;
+			}
+		}
+
 		checkCombo();
+
 		// Screen Log
 		std::ostringstream oss1;
 		oss1 << "R/B/O " << REDS << "/" << BLUES << "/" << OTHERS;
@@ -156,15 +217,25 @@ public:
 		oss3 << "x/s " << score.combo << "/" << score.score;
 		text3.setString(oss3.str());
 
-		int audioPos = audio.getPos();
+		int audioPos = 0;
+		if (!audioStarted) {
+			audioPos = prevTimer.getElapsedTime().asMilliseconds() - startOffset;
+		} else {
+			audioPos = audio.getPos();
+		}
+
 		drawable.clear();
 		ofScanning = true;
 		bool first = true;
 		int index = offset;
+
 		while (ofScanning) { // start with offset ; scanning in range ; break on greater than range break ; offset > scan range > break;
 			if (index + 1 > hitobjects.size()) { ofScanning = false; break; }
+
 			HitObject& hobj = hitobjects.at(index);
+
 			if (hobj.time > audioPos + 1280) { ofScanning = false; break; }
+
 			if (first && hobj.time >= audioPos - 200 && hobj.time <= audioPos + 1280) {
 				first = false;
 				offset = index;
@@ -185,6 +256,7 @@ public:
 							tap.hitted = true;
 							checkHit(hobj.time, tap.time);
 						}
+
 						if (((hobj.hitSound & HitSound::Normal) != HitSound::None ||
 								hobj.hitSound == HitSound::None) &&
 								(tap.hs & HitSound::Normal) != HitSound::None) {
@@ -194,8 +266,7 @@ public:
 							tap.hitted = true;
 							checkHit(hobj.time, tap.time);
 						}
-					}
-					else {
+					} else {
 						hobj.hitted = true;
 						OTHERS++;
 						score.combo++;
@@ -218,15 +289,12 @@ public:
 					if ((hobj.hitSound & HitSound::Whistle) != HitSound::None ||
 						(hobj.hitSound & HitSound::Clap) != HitSound::None) {
 						drawable.emplace_front(sf::Vector2f(150.f + (b - a), 200.f), sf::Color::Blue, (hobj.hitSound & HitSound::Finish) == HitSound::Finish ? 50.f : 40.f);
-					}
-					else {
+					} else {
 						drawable.emplace_front(sf::Vector2f(150.f + (b - a), 200.f), sf::Color::Red, (hobj.hitSound & HitSound::Finish) == HitSound::Finish ? 50.f : 40.f);
 					}
-				}
-				else if ((hobj.type & Type::Slider) != Type::None) {
+				} else if ((hobj.type & Type::Slider) != Type::None) {
 					drawable.emplace_front(sf::Vector2f(150.f + (b - a), 200.f), sf::Color::Yellow, (hobj.hitSound & HitSound::Finish) == HitSound::Finish ? 50.f : 40.f);
-				}
-				else if ((hobj.type & Type::Spinner) != Type::None) {
+				} else if ((hobj.type & Type::Spinner) != Type::None) {
 					drawable.emplace_front(sf::Vector2f(150.f + (b - a), 200.f), sf::Color::Green, 40.f);
 				}
 			}
@@ -235,35 +303,49 @@ public:
 		}
 		taps.clear();
 	}
-	std::string getSelected() {
-		OsuFile& osf = this->osufile;
+
+	std::string getSelectedFromOsuFile(OsuFile& osufile) {
+		OsuFile& osf = osufile;
 		std::ostringstream oss;
-		oss << osf.artist << " - " << osf.title << "[" << osf.version << "] (" << osf.creator << ")\n";
+		oss << osf.artist << " - " << osf.title << "[" << osf.version << "] (" << osf.creator << ")";
 		return oss.str();
 	}
+
+	std::string getSelected() {
+		return getSelectedFromOsuFile(this->osufile);
+	}
+
 	void load(OsuFile& osufile) {
-		std::cout << "Selected: " << osufile.version << '\n';
+		std::cout << "Selected: " << getSelectedFromOsuFile(osufile) << '\n';
 		this->osufile = osufile;
 		hitobjects = std::move(parseHitObjects(osufile.filepath));
 		//
+		startOffset = 0;
+		int firstObjPos = hitobjects.at(0).time;
+		//
+		if (firstObjPos < 1200) {
+			startOffset = 2000;
+		} else if (firstObjPos >= 5000) {
+			startOffset = firstObjPos - 2000;
+		}
+		//
 		reset();
+		gameIsRunning = true;
 		//
 		int countOfCircles = 0;
 		int countOfSliders = 0;
 		int countOfSpinners = 0;
+		//
 		for (HitObject& hobj : hitobjects) {
 			if ((static_cast<unsigned int>(hobj.type) & static_cast<unsigned int>(Type::HitCircle)) != 0) {
 				countOfCircles++;
-			}
-			else if ((static_cast<unsigned int>(hobj.type) & static_cast<unsigned int>(Type::Slider)) != 0) {
+			} else if ((static_cast<unsigned int>(hobj.type) & static_cast<unsigned int>(Type::Slider)) != 0) {
 				countOfSliders++;
-			}
-			else if ((static_cast<unsigned int>(hobj.type) & static_cast<unsigned int>(Type::Spinner)) != 0) {
+			} else if ((static_cast<unsigned int>(hobj.type) & static_cast<unsigned int>(Type::Spinner)) != 0) {
 				countOfSpinners++;
 			}
 		}
-		std::cout << "Count Of Circles: " << countOfCircles << '\n';
-		std::cout << "Count Of Sliders: " << countOfSliders << '\n';
-		std::cout << "Count Of Spinners: " << countOfSpinners << '\n';
+		//
+		std::cout << "C/S/S: " << countOfCircles << "/" << countOfSliders << "/" << countOfSpinners << '\n';
 	}
 };

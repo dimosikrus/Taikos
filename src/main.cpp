@@ -23,25 +23,27 @@ static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
             SpecialState& specialState, FloatingMenu& flmenu, SongSelectionMenu& ssm,
             Game& game) {
     sf::Mouse::Button mButton;
+
     if (event->is<sf::Event::Closed>()) window.close();
+
     if (event->is<sf::Event::MouseButtonPressed>()) {
         mButton = event->getIf<sf::Event::MouseButtonPressed>()->button;
         switch(mButton) {
             case sf::Mouse::Button::Left:
                 if (gameState == GameState::MenuIntro) {
-                    std::cout << "INTROMENUCLICK" << '\n';
                     flmenu.click();
                 } else if (gameState == GameState::MenuSongSelection) {
-                    std::cout << "SONGSELECTIONCLICK" << '\n';
                     ssm.click();
                 }
                 break;
             default: break;
         }
     }
+
     if (event->is<sf::Event::MouseMoved>()) {
         mousePosition = sf::Vector2f(event->getIf<sf::Event::MouseMoved>()->position);
     }
+
     if (event->is<sf::Event::MouseWheelScrolled>()) {
         float scrolled = event->getIf<sf::Event::MouseWheelScrolled>()->delta;
         if (gameState == GameState::MenuSongSelection) {
@@ -73,6 +75,7 @@ static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
             }
         }
     }
+
     if (event->is<sf::Event::KeyPressed>()) {
         sf::Keyboard::Key code = event->getIf<sf::Event::KeyPressed>()->code;
         Taps taps;
@@ -146,6 +149,7 @@ static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
             default: break;
         }
     }
+
     if (event->is<sf::Event::KeyReleased>()) {
         sf::Keyboard::Key code = event->getIf<sf::Event::KeyReleased>()->code;
         switch(code) {
@@ -159,67 +163,71 @@ static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
 };
 
 fn main() {
-    Logger info(LogLevel::INFO);
-    Logger warn(LogLevel::WARN);
-    Logger error(LogLevel::ERR);
-    Logger debug(LogLevel::DEBUG);
+    Logger logger;
 
     GameState gameState = GameState::Loading;
     SpecialState specialState = SpecialState::None;
 
-    info.log("INFO Logger");
-    warn.log("WARNING Logger");
-    error.log("ERROR Logger");
-    debug.log("DEBUG Logger");
+    logger.log(LogLevel::INFO, "INFO Logger");
+    logger.log(LogLevel::WARN, "WARNING Logger");
+    logger.log(LogLevel::ERR, "ERROR Logger");
+    logger.log(LogLevel::DEBUG, "DEBUG Logger");
 
     Audio audio;
     audio.loadDefault();
     audio.setSoundsVolume(0.4f);
 
-    debug.log("AUDIO INITIALIZED");
+    logger.log(LogLevel::DEBUG, "AUDIO INITIALIZED");
 
-    sf::VideoMode video_mode(sf::Vector2u(1280,720));
+    sf::VideoMode video_mode({ 1280,720 });
     constexpr auto window_style = sf::Style::Titlebar | sf::Style::Close;
     sf::RenderWindow window(video_mode, "Taikos Loading", window_style);
     sf::Vector2f windowFSize({static_cast<float>(window.getSize().x),static_cast<float>(window.getSize().y)});
     sf::Clock clock;
-    debug.log("WINDOW INITIALIZED");
+    logger.log(LogLevel::DEBUG, "WINDOW INITIALIZED");
 
     sf::Font BASICFONT(get_executable_path() / "assets\\arial.ttf");;
     
     GameState prevState = gameState;
+
     sf::RectangleShape pauseRect(windowFSize);
+
     pauseRect.setPosition({ 0, 0 });
-    pauseRect.setFillColor(sf::Color(1,1,1,152));
+    pauseRect.setFillColor({ 1, 1, 1, 152 });
+
     float fps = 0;
     float dt = 1;
     int fpsDelayCounter = 0;
+
     sf::Vector2f mousePosition(-0.1f,-0.1f);
-    FloatingMenu flmenu(sf::Vector2f(200.f,200.f), BASICFONT, gameState);
+
     OsuFile osuempty;
-    Game game(audio, osuempty, BASICFONT);
+
+    FloatingMenu flmenu({ 200.f,200.f }, BASICFONT, gameState);
+    ResultScreen results(BASICFONT);
+    Game game(audio, osuempty, BASICFONT, results, gameState);
     SongSelectionMenu ssm(BASICFONT, gameState, audio, game);
-    ResultScreen results(game, BASICFONT);
+
     sf::Text fpsText(BASICFONT, "FPS: 0");
     fpsText.setPosition({ 15.f, 15.f });
-    debug.log("VARIABLES INITIALIZED");
 
     gameState = GameState::MenuIntro;
-    debug.log("Window events handler running...");
+    logger.log(LogLevel::DEBUG, "Window events handler running...");
     window.setTitle("Taikos Idle");
+
     while (window.isOpen()) {
         clock.start();
         while (std::optional<sf::Event> event = window.pollEvent()) events(event, window, mousePosition, audio, gameState, specialState, flmenu, ssm, game);
         //audio.updateEngine();
         window.clear(sf::Color::Black);
 
-        // std::cout << mousePosition.x << " | " << mousePosition.y << '\n';
         if (fpsDelayCounter > 500) {
             std::ostringstream oss;
             oss << "FPS: " << fps;
             fpsText.setString(oss.str());
             fpsDelayCounter = 0;
         }
+
         fpsDelayCounter++;
         window.draw(fpsText);
         
@@ -241,9 +249,6 @@ fn main() {
                 ssm.show(window, mousePosition);
                 break;
             case GameState::GamePlaying:
-                if (!audio.checkAudioIsActive()) {
-                    gameState = GameState::GameResults;
-                }
                 if (prevState != gameState) {
                     prevState = gameState;
                     window.setTitle("Taikos " + game.getSelected());
