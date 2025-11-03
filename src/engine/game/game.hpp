@@ -187,7 +187,8 @@ public:
 			if (prevTimer.getElapsedTime().asMilliseconds() >= startOffset && !audioStarted) {
 				prevTimer.stop();
 				prevTimer.reset();
-				audio.playAudio(osufile.filepath.parent_path() / osufile.audioFileName);
+				audio.loadAudio(osufile.filepath.parent_path() / osufile.audioFileName);
+				audio.playAudio();
 				audioStarted = true;
 			}
 		}
@@ -198,7 +199,8 @@ public:
 				if (audio.checkAudioIsActive()) {
 					audio.stopAudio();
 				}
-				audio.playAudio(osufile.filepath.parent_path() / osufile.audioFileName);
+				audio.loadAudio(osufile.filepath.parent_path() / osufile.audioFileName);
+				audio.playAudio();
 				audio.setPos(static_cast<double>(startOffset)/1000);
 				audioStarted = true;
 			}
@@ -349,3 +351,64 @@ public:
 		std::cout << "C/S/S: " << countOfCircles << "/" << countOfSliders << "/" << countOfSpinners << '\n';
 	}
 };
+
+class VolumeGraph {
+	sf::RectangleShape soundRect;
+	sf::RectangleShape musicRect;
+	sf::Clock clock;
+	bool showing = false;
+	Audio& localaudio;
+public:
+	VolumeGraph(Audio& audio) : localaudio(audio) {
+		soundRect.setSize(sf::Vector2f(10, 300));
+		musicRect.setSize(sf::Vector2f(10, 300));
+
+		soundRect.setFillColor(sf::Color::Blue);
+		musicRect.setFillColor(sf::Color::Cyan);
+
+		soundRect.setPosition({ 1270, 420 });
+		musicRect.setPosition({ 1258, 420 });
+	}
+
+	void draw(sf::RenderWindow& window) {
+		if (showing) {
+			window.draw(soundRect);
+			window.draw(musicRect);
+		}
+	}
+
+	void update() {
+		if (showing) {
+			if (!clock.isRunning()) {
+				clock.reset();
+				clock.start();
+			}
+
+			if (clock.getElapsedTime().asSeconds() > 5) {
+				clock.reset();
+				clock.stop();
+				showing = false;
+			}
+
+			float sVol = localaudio.getSoundVolume();
+			soundRect.setSize(sf::Vector2f(10, 300 * sVol ? 300 * sVol : 2));
+			soundRect.setPosition({ 1270, 720 - 300 * sVol ? 720 - 300 * sVol : 2 });
+
+			float aVol = localaudio.getAudioVolume();
+			musicRect.setSize(sf::Vector2f(10, 300 * aVol ? 300 * aVol : 2));
+			musicRect.setPosition({ 1258, 720 - 300 * aVol ? 720 - 300 * aVol : 2 });
+		}
+		else {
+			if (clock.isRunning()) {
+				clock.reset();
+				clock.stop();
+			}
+		}
+	};
+
+	void show() {
+		showing = true;
+		clock.reset();
+	}
+};
+

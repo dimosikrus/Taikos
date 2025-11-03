@@ -82,8 +82,7 @@ class Logger {
     }
 
     std::string getA(Ansi::Color color) {
-        switch (color)
-        {
+        switch (color) {
         case Ansi::Color::RESET: return Ansi::RESET;
         case Ansi::Color::BLACK: return Ansi::BLACK;
         case Ansi::Color::RED: return Ansi::RED;

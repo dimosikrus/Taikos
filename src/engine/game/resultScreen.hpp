@@ -27,8 +27,8 @@ public:
 			x300(font, "x300 0"), x100(font, "x100 0"), x50(font, "x50 0"),
 			xMiss(font, "xMiss 0"), xMaxCombo(font, "MaxCombo 0") {
 
-		xScore.setPosition({ 20.f, 78.f });
-		x300.setPosition({ 20.f, 140.f });
+		xScore.setPosition({ 20.f, 78.f }); 
+		x300.setPosition({ 20.f, 140.f }); /* adasd asddad */
 		x100.setPosition({ 120.f, 140.f });
 		x50.setPosition({ 220.f, 140.f });
 		xMiss.setPosition({ 320.f, 140.f });
@@ -43,14 +43,20 @@ public:
 	}
 
 	void updateRows(ResultRows resultRows) {
-		ResultRows rr{};
-		rr = std::move(resultRows);
-		xScore.setString(	"Score "	+ rr.xScore);
-		x300.setString(		"x300 "		+ rr.x300);
-		x100.setString(		"x100 "		+ rr.x100);
-		x50.setString(		"x50 "		+ rr.x50);
-		xMiss.setString(	"xMiss "	+ rr.x0);
-		xMaxCombo.setString("Max Combo "+ rr.xMaxCombo);
+		/*ResultRows rr{};
+		rr = std::move(resultRows);*/
+		std::string scoreTEXT =		"Score " +		std::to_string(resultRows.xScore);
+		std::string x300TEXT =		"x300 " +		std::to_string(resultRows.x300);
+		std::string x100TEXT =		"x100 " +		std::to_string(resultRows.x100);
+		std::string x50TEXT =		"x50 " +		std::to_string(resultRows.x50);
+		std::string xMissTEXT =		"xMiss " +		std::to_string(resultRows.x0);
+		std::string MaxComboTEXT =	"MaxCombo " +	std::to_string(resultRows.xMaxCombo);
+		xScore.setString(scoreTEXT);
+		x300.setString(x300TEXT);
+		x100.setString(x100TEXT);
+		x50.setString(x50TEXT);
+		xMiss.setString(xMissTEXT);
+		xMaxCombo.setString(MaxComboTEXT);
 	}
 
 	void draw(sf::RenderWindow& window) {

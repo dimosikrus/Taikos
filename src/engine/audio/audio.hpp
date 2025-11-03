@@ -166,6 +166,7 @@ public:
     void playSound(const std::string& key) {
         sounds.playSound(key);
     }
+    float getSoundVolume() { return soundsVolume; };
     void setSoundsVolume(float volume) {
         soundsVolume = volume;
         sounds.setVolume(soundsVolume);
@@ -175,33 +176,39 @@ public:
             soundsVolume += .1f;
             sounds.setVolume(soundsVolume);
         }
+        else soundsVolume = 1.f;
     }
     void downSoundsVol() {
         if(soundsVolume >= 0) {
             soundsVolume -= .1f;
             sounds.setVolume(soundsVolume);
         }
+        else soundsVolume = 0;
     }
-    void playAudio(const fs::path& path) {
+    void loadAudio(const fs::path& path) {
         music.load(path);
         music.SetVolume(musicVolume);
+    }
+    void playAudio() {
         music.Play();
     }
+    float getAudioVolume() { return musicVolume; };
     void setAudioVolume(float volume) {
         musicVolume = volume;
     }
     void upAudioVol() {
         if(musicVolume < 1.f) {
             musicVolume += .1f;
-            setAudioVolume(musicVolume);
             music.SetVolume(musicVolume);
         }
+        else musicVolume = 1.f;
     }
     void downAudioVol() {
         if(musicVolume > 0) {
             musicVolume -= .1f;
             music.SetVolume(musicVolume);
         }
+        else musicVolume = 0;
     }
     bool checkAudioIsActive() {
         return music.checkActive();

@@ -21,7 +21,7 @@ static bool spriteCollision(const sf::Sprite& sprite, const sf::Vector2f positio
 static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
             sf::Vector2f& mousePosition, Audio& audio, GameState& gameState,
             SpecialState& specialState, FloatingMenu& flmenu, SongSelectionMenu& ssm,
-            Game& game) {
+            Game& game, VolumeGraph& volGraph) {
     sf::Mouse::Button mButton;
 
     if (event->is<sf::Event::Closed>()) window.close();
@@ -46,32 +46,20 @@ static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
 
     if (event->is<sf::Event::MouseWheelScrolled>()) {
         float scrolled = event->getIf<sf::Event::MouseWheelScrolled>()->delta;
-        if (gameState == GameState::MenuSongSelection) {
-            if (specialState != SpecialState::Alt) {
-                if (scrolled > 0) {
-                    ssm.up();
-                } else if (scrolled < 0) {
-                    ssm.down();
-                }
+        if (gameState == GameState::MenuSongSelection || gameState == GameState::GamePlaying) {
+            if (gameState == GameState::MenuSongSelection && specialState == SpecialState::None) {
+                if (scrolled > 0) ssm.up();
+                else if (scrolled < 0) ssm.down();
             }
             if (specialState == SpecialState::Alt) {
-                if (scrolled > 0) {
-                    audio.upAudioVol();
-                } else if (scrolled < 0) {
-                    audio.downAudioVol();
-                }
+                volGraph.show();
+                if (scrolled > 0) audio.upAudioVol();
+                else if (scrolled < 0) audio.downAudioVol();
             }
-        }
-        if (gameState == GameState::GamePlaying) {
-            if (specialState == SpecialState::Alt) {
-                if (scrolled > 0) {
-                    audio.upAudioVol();
-                    audio.upSoundsVol();
-                }
-                else if (scrolled < 0) {
-                    audio.downAudioVol();
-                    audio.downSoundsVol();
-                }
+            if (specialState == SpecialState::Control) {
+                volGraph.show();
+                if (scrolled > 0) audio.upSoundsVol();
+                else if (scrolled < 0) audio.downSoundsVol();
             }
         }
     }
@@ -185,6 +173,7 @@ fn main() {
     sf::Vector2f windowFSize({static_cast<float>(window.getSize().x),static_cast<float>(window.getSize().y)});
     sf::Clock clock;
     logger.log(LogLevel::DEBUG, "WINDOW INITIALIZED");
+    //window.setFramerateLimit(1000);
 
     sf::Font BASICFONT(get_executable_path() / "assets\\arial.ttf");;
     
@@ -208,6 +197,8 @@ fn main() {
     Game game(audio, osuempty, BASICFONT, results, gameState);
     SongSelectionMenu ssm(BASICFONT, gameState, audio, game);
 
+    VolumeGraph volGraph(audio);
+
     sf::Text fpsText(BASICFONT, "FPS: 0");
     fpsText.setPosition({ 15.f, 15.f });
 
@@ -217,7 +208,7 @@ fn main() {
 
     while (window.isOpen()) {
         clock.start();
-        while (std::optional<sf::Event> event = window.pollEvent()) events(event, window, mousePosition, audio, gameState, specialState, flmenu, ssm, game);
+        while (std::optional<sf::Event> event = window.pollEvent()) events(event, window, mousePosition, audio, gameState, specialState, flmenu, ssm, game, volGraph);
         //audio.updateEngine();
         window.clear(sf::Color::Black);
 
@@ -230,6 +221,7 @@ fn main() {
 
         fpsDelayCounter++;
         window.draw(fpsText);
+        volGraph.update();
         
         switch(gameState) {
             case GameState::Loading:
@@ -279,6 +271,8 @@ fn main() {
                 break;
             default: break;
         }
+
+        volGraph.draw(window);
 
         window.display();
         dt = static_cast<float>(clock.getElapsedTime().asMicroseconds())/1000;

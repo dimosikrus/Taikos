@@ -26,7 +26,7 @@ public:
     MenuButton(sf::Vector2f position, sf::Vector2f size, sf::Color color, sf::Font& font, const std::string buttonText = "", std::function<void()> action = []{}) : 
       image(sf::Vector2u(size), color), texture(image), sprite(texture), font(font), text(font, buttonText), action(action), originalColor(color) {
         sprite.setPosition(position);
-        sprite.setTextureRect(sf::IntRect({ 0, 0 }, { size.x, size.y }));
+        sprite.setTextureRect(sf::IntRect(sf::Vector2i( 0, 0 ), sf::Vector2i(size)));
         text.setStyle(sf::Text::Regular);
         text.setCharacterSize(sf::Vector2u(0u,static_cast<unsigned int>(size.y)).y-10u);
         sf::Vector2f textsize = text.getGlobalBounds().size;
