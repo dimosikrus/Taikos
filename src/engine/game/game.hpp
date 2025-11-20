@@ -8,6 +8,8 @@
 #include "../gamestates.hpp"
 #include "osuTypes.hpp"
 #include "resultScreen.hpp"
+#include "../animations/animations.hpp"
+#include "../filesystem/filesystem.hpp"
 
 class DrawableObj {
 	float radius;
@@ -15,19 +17,39 @@ class DrawableObj {
 	sf::CircleShape circlefill;
 	sf::CircleShape circleborder;
 	sf::Vector2f pos;
+
+	sf::Texture& hct;
+	sf::Texture& hcot;
+	sf::Sprite hcs;
+	sf::Sprite hcos;
 public:
-	DrawableObj (sf::Vector2f position, sf::Color color, float radius) : pos(position), circlefill(radius), circleborder(radius), radius(radius) {
-		circlefill.setFillColor(color);
-		circleborder.setFillColor(sf::Color::Transparent);
-		circleborder.setOutlineColor(sf::Color::White);
-		circleborder.setOutlineThickness(border);
-		circlefill.setPosition(sf::Vector2f(pos.x, pos.y - radius / 2.f));
-		circleborder.setPosition(sf::Vector2f(pos.x, pos.y - radius / 2.f));
+	DrawableObj (sf::Vector2f position, sf::Color color, float radius, sf::Texture& hct, sf::Texture& hcot) :
+			pos(position), circlefill(radius), circleborder(radius), radius(radius),
+			hct(hct), hcot(hcot), hcs(hct), hcos(hcot) {
+		//circlefill.setFillColor(color);
+		//circleborder.setFillColor(sf::Color::Transparent);
+		//circleborder.setOutlineColor(sf::Color::White);
+		//circleborder.setOutlineThickness(border);
+		//circlefill.setPosition(sf::Vector2f(pos.x, pos.y - radius / 2.f));
+		//circleborder.setPosition(sf::Vector2f(pos.x, pos.y - radius / 2.f));
+		hcs.setTexture(hct);
+		hcos.setTexture(hcot);
+		hcs.setColor(color);
+		sf::FloatRect sizeg = hcs.getGlobalBounds();
+		sf::FloatRect sizego = hcos.getGlobalBounds();
+		//hcs.setScale({ 1 / (sizeg.size.x / radius), 1 / (sizeg.size.y / radius) });
+		//hcos.setScale({ 1 / (sizego.size.x / radius), 1 / (sizego.size.y / radius) });
+		hcs.setScale({ .75f + (radius-40.f) / 100, .75f + (radius - 40.f) / 100 });
+		hcos.setScale({ .75f + (radius - 40.f) / 100, .75f + (radius - 40.f) / 100 });
+		hcs.setPosition(sf::Vector2f(pos.x, pos.y - radius / 2.f));
+		hcos.setPosition(sf::Vector2f(pos.x, pos.y - radius / 2.f));
 	}
 
 	void draw(sf::RenderWindow& window) {
-		window.draw(circlefill);
-		window.draw(circleborder);
+		//window.draw(circlefill);
+		//window.draw(circleborder);
+		window.draw(hcs);
+		window.draw(hcos);
 	}
 };
 
@@ -53,8 +75,10 @@ class Game {
 	sf::RectangleShape x100Rect;
 	sf::RectangleShape x300Rect;
 	ResultScreen& localResults;
+	sf::RenderWindow& window;
 	bool ofScanning = true;
 	std::vector<Taps> taps;
+	sf::Vector2f mousePosition{ 0.f, 0.f };
 
 	void checkHit(int HitObjectTime, int TapTime) {
 		if (TapTime > HitObjectTime - 20 && TapTime < HitObjectTime + 20) {
@@ -100,6 +124,9 @@ class Game {
 		rr.xScore = score.score;
 		localResults.updateRows(rr);
 	}
+
+	sf::Texture hct;
+	sf::Texture hcot;
 public:
 	int REDS = 0,
 		BLUES = 0,
@@ -107,7 +134,7 @@ public:
 	int comboMissBuffer = 0;
 	Score score;
 
-	Game(Audio& audio, OsuFile& osufile, sf::Font& font, ResultScreen& results, GameState& state) : audio(audio), osufile(osufile), font(font), text1(font), text2(font), text3(font),
+	Game(Audio& audio, OsuFile& osufile, sf::Font& font, ResultScreen& results, GameState& state, sf::RenderWindow& window) : audio(audio), window(window), osufile(osufile), font(font), text1(font), text2(font), text3(font),
 			centerRect({ 4.f, 120.f }), x0Rect({ 140.f, 40.f }), x50Rect({ 110.f, 40.f }), x100Rect({ 80.f, 40.f }), x300Rect({ 40.f, 40.f }), localResults(results), localState(state) {
 		centerRect.setFillColor(sf::Color::Magenta);
 		x0Rect.setFillColor(sf::Color::Red);
@@ -122,6 +149,13 @@ public:
 		text1.setPosition({ 15.f, 40.f });
 		text2.setPosition({ 15.f, 65.f });
 		text3.setPosition({ 400.f, 15.f });
+
+		if (!hct.loadFromFile(fs::path(get_executable_path() / "assets/hitcircle.png"))) {
+			std::cout << "NOT assets/hitcircle.png" << '\n';
+		}
+		if (!hcot.loadFromFile(fs::path(get_executable_path() / "assets/hitcircleover.png"))) {
+			std::cout << "NOT assets/hitcircleover.png" << '\n';
+		}
 	};
 
 	void pushTap(Taps tapz) {
@@ -134,8 +168,11 @@ public:
 		window.draw(x100Rect);
 		window.draw(x300Rect);
 		window.draw(centerRect);
-		for (DrawableObj obj : drawable) {
-			obj.draw(window);
+		//for (DrawableObj obj : drawable) {
+		//	obj.draw(window);
+		//}
+		for (size_t i = drawable.size(); i > 0; i--) {
+			drawable.at(i-1).draw(window);
 		}
 		window.draw(text1);
 		window.draw(text2);
@@ -167,7 +204,7 @@ public:
 	}
 
 	void update() {
-		if (audio.getPos() + 200 > hitobjects.at(hitobjects.size() - 1).time) {
+		if (audio.getMusicPos() + 200 > hitobjects.at(hitobjects.size() - 1).time) {
 			gameIsRunning = false;
 			std::cout << "Map is End." << "\n";
 			localState = GameState::GameResults;
@@ -176,7 +213,7 @@ public:
 
 		if (startOffset <= 3000) {
 			if (!atimerStarted) {
-				if (audio.checkAudioIsActive()) {
+				if (audio.checkMusicIsActive()) {
 					audio.stopAudio();
 				}
 				gameIsRunning = true;
@@ -196,7 +233,7 @@ public:
 		else if (startOffset >= 3000) {
 			if (!audioStarted) {
 				gameIsRunning = true;
-				if (audio.checkAudioIsActive()) {
+				if (audio.checkMusicIsActive()) {
 					audio.stopAudio();
 				}
 				audio.loadAudio(osufile.filepath.parent_path() / osufile.audioFileName);
@@ -223,7 +260,7 @@ public:
 		if (!audioStarted) {
 			audioPos = prevTimer.getElapsedTime().asMilliseconds() - startOffset;
 		} else {
-			audioPos = audio.getPos();
+			audioPos = audio.getMusicPos();
 		}
 
 		drawable.clear();
@@ -290,14 +327,14 @@ public:
 				if ((hobj.type & Type::HitCircle) != Type::None) {
 					if ((hobj.hitSound & HitSound::Whistle) != HitSound::None ||
 						(hobj.hitSound & HitSound::Clap) != HitSound::None) {
-						drawable.emplace_front(sf::Vector2f(150.f + (b - a), 200.f), sf::Color::Blue, (hobj.hitSound & HitSound::Finish) == HitSound::Finish ? 50.f : 40.f);
+						drawable.emplace_back(sf::Vector2f(150.f + (b - a) / 1480.f * 1130.f, 200.f), sf::Color::Blue, (hobj.hitSound & HitSound::Finish) == HitSound::Finish ? 50.f : 40.f, hct, hcot);
 					} else {
-						drawable.emplace_front(sf::Vector2f(150.f + (b - a), 200.f), sf::Color::Red, (hobj.hitSound & HitSound::Finish) == HitSound::Finish ? 50.f : 40.f);
+						drawable.emplace_back(sf::Vector2f(150.f + (b - a) / 1480.f * 1130.f, 200.f), sf::Color::Red, (hobj.hitSound & HitSound::Finish) == HitSound::Finish ? 50.f : 40.f, hct, hcot);
 					}
 				} else if ((hobj.type & Type::Slider) != Type::None) {
-					drawable.emplace_front(sf::Vector2f(150.f + (b - a), 200.f), sf::Color::Yellow, (hobj.hitSound & HitSound::Finish) == HitSound::Finish ? 50.f : 40.f);
+					drawable.emplace_back(sf::Vector2f(150.f + (b - a) / 1480.f * 1130.f, 200.f), sf::Color::Yellow, (hobj.hitSound & HitSound::Finish) == HitSound::Finish ? 50.f : 40.f, hct, hcot);
 				} else if ((hobj.type & Type::Spinner) != Type::None) {
-					drawable.emplace_front(sf::Vector2f(150.f + (b - a), 200.f), sf::Color::Green, 40.f);
+					drawable.emplace_back(sf::Vector2f(150.f + (b - a) / 1480.f * 1130.f, 200.f), sf::Color::Green, 40.f, hct, hcot);
 				}
 			}
 			//
@@ -350,6 +387,118 @@ public:
 		//
 		std::cout << "C/S/S: " << countOfCircles << "/" << countOfSliders << "/" << countOfSpinners << '\n';
 	}
+
+	//void handleEvents(std::optional<sf::Event> event) {
+	//	sf::Mouse::Button mButton;
+	//	float scrolled;
+
+	//	if (event->is<sf::Event::Closed>()) window.close();
+
+	//	if (event->is<sf::Event::MouseButtonPressed>()) {
+	//		mButton = event->getIf<sf::Event::MouseButtonPressed>()->button;
+	//		switch (mButton) {
+	//		case sf::Mouse::Button::Left:
+	//			break;
+	//		case sf::Mouse::Button::Right:
+	//			break;
+	//		default: break;
+	//		}
+	//	}
+
+	//	if (event->is<sf::Event::MouseMoved>()) {
+	//		mousePosition = sf::Vector2f(event->getIf<sf::Event::MouseMoved>()->position);
+	//	}
+
+	//	if (event->is<sf::Event::MouseWheelScrolled>()) {
+	//		scrolled = event->getIf<sf::Event::MouseWheelScrolled>()->delta;
+	//	}
+
+	//	if (event->is<sf::Event::KeyPressed>()) {
+	//		sf::Keyboard::Key code = event->getIf<sf::Event::KeyPressed>()->code;
+	//		Taps taps;
+	//		switch (code) {
+	//			//case sf::Keyboard::Key::Escape: window.close(); break;
+	//		case sf::Keyboard::Key::Escape:
+	//			if (gameState == GameState::MenuSongSelection) {
+	//				gameState = GameState::MenuIntro;
+	//				audio.stopAudio();
+	//				break;
+	//			}
+	//			if (gameState == GameState::GamePlaying) {
+	//				gameState = GameState::GamePause;
+	//				if (!audio.paused()) {
+	//					audio.pauseAudio();
+	//				}
+	//				break;
+	//			}
+	//			if (gameState == GameState::GamePause) {
+	//				gameState = GameState::GamePlaying;
+	//				if (audio.paused()) {
+	//					audio.unPauseAudio();
+	//				}
+	//				break;
+	//			}
+	//			if (gameState == GameState::GameResults) {
+	//				gameState = GameState::MenuSongSelection;
+	//				break;
+	//			}
+	//			break;
+	//		case sf::Keyboard::Key::Q:
+	//			gameState = GameState::MenuSongSelection;
+	//			if (audio.paused()) {
+	//				audio.unPauseAudio();
+	//			}
+	//			break;
+	//		case sf::Keyboard::Key::E:
+	//			audio.resetPos();
+	//			game.reset();
+	//			break;
+	//		case sf::Keyboard::Key::D:
+	//			audio.playSound("hitZ");
+	//			taps.time = audio.getMusicPos();
+	//			taps.hs = HitSound::Whistle;
+	//			game.pushTap(taps);
+	//			break;
+	//		case sf::Keyboard::Key::F:
+	//			audio.playSound("hitX");
+	//			taps.time = audio.getMusicPos();
+	//			taps.hs = HitSound::Normal;
+	//			game.pushTap(taps);
+	//			break;
+	//		case sf::Keyboard::Key::J:
+	//			audio.playSound("hitX");
+	//			taps.time = audio.getMusicPos();
+	//			taps.hs = HitSound::Normal;
+	//			game.pushTap(taps);
+	//			break;
+	//		case sf::Keyboard::Key::K:
+	//			audio.playSound("hitZ");
+	//			taps.time = audio.getMusicPos();
+	//			taps.hs = HitSound::Whistle;
+	//			game.pushTap(taps);
+	//			break;
+	//		case sf::Keyboard::Key::U:
+	//			int maxLength = audio.GetMusicLength();
+	//			break;
+	//		case sf::Keyboard::Key::Up: ssm.up(); break;
+	//		case sf::Keyboard::Key::Down: ssm.down(); break;
+	//		case sf::Keyboard::Key::LAlt: specialState = SpecialState::Alt; break;
+	//		case sf::Keyboard::Key::RAlt: specialState = SpecialState::Alt; break;
+	//		case sf::Keyboard::Key::LShift: specialState = SpecialState::Shift; break;
+	//		case sf::Keyboard::Key::LControl: specialState = SpecialState::Control; break;
+	//		default: break;
+	//		}
+	//	}
+
+	//	if (event->is<sf::Event::KeyReleased>()) {
+	//		sf::Keyboard::Key code = event->getIf<sf::Event::KeyReleased>()->code;
+	//		switch (code) {
+	//		case sf::Keyboard::Key::W:
+	//			break;
+	//		default: break;
+	//		}
+	//	}
+	//}
 };
 
 class VolumeGraph {
@@ -394,7 +543,7 @@ public:
 			soundRect.setSize(sf::Vector2f(10, 300 * sVol ? 300 * sVol : 2));
 			soundRect.setPosition({ 1270, 720 - 300 * sVol ? 720 - 300 * sVol : 2 });
 
-			float aVol = localaudio.getAudioVolume();
+			float aVol = localaudio.getMusicVolume();
 			musicRect.setSize(sf::Vector2f(10, 300 * aVol ? 300 * aVol : 2));
 			musicRect.setPosition({ 1258, 720 - 300 * aVol ? 720 - 300 * aVol : 2 });
 		}

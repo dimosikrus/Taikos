@@ -1,4 +1,21 @@
 #pragma once
+#undef RESET
+#undef BLACK
+#undef RED
+#undef GREEN
+#undef YELLOW
+#undef BLUE
+#undef MAGENTA
+#undef CYAN
+#undef WHITE
+#undef BRIGHT_BLACK
+#undef BRIGHT_RED
+#undef BRIGHT_GREEN
+#undef BRIGHT_YELLOW
+#undef BRIGHT_BLUE
+#undef BRIGHT_MAGENTA
+#undef BRIGHT_CYAN
+#undef BRIGHT_WHIT
 
 #include <iostream>
 #include <ctime>
@@ -50,75 +67,71 @@ enum class LogLevel {
     DEBUG
 };
 
+std::string getT(LogLevel level) {
+    switch (level) {
+    case LogLevel::INFO: return Ansi::CYAN;
+    case LogLevel::WARN: return Ansi::YELLOW;
+    case LogLevel::ERR: return Ansi::RED;
+    case LogLevel::DEBUG: return Ansi::MAGENTA;
+    default: return Ansi::CYAN;
+    }
+}
+
+std::string getD(LogLevel level) {
+    switch (level) {
+    case LogLevel::INFO: return "[INFO]" + Ansi::BRIGHT_CYAN;
+    case LogLevel::WARN: return "[WARN]" + Ansi::BRIGHT_YELLOW;
+    case LogLevel::ERR: return "[ERROR]" + Ansi::BRIGHT_RED;
+    case LogLevel::DEBUG: return "[DEBUG]" + Ansi::BRIGHT_MAGENTA;
+    default: return Ansi::CYAN;
+    }
+}
+
+std::string getL(LogLevel level) {
+    switch (level) {
+    case LogLevel::INFO: return "[INFO]";
+    case LogLevel::WARN: return "[WARN]";
+    case LogLevel::ERR: return "[ERROR]";
+    case LogLevel::DEBUG: return "[DEBUG]";
+    default: return Ansi::CYAN;
+    }
+}
+
+std::string getA(Ansi::Color color) {
+    switch (color) {
+    case Ansi::Color::RESET: return Ansi::RESET;
+    case Ansi::Color::BLACK: return Ansi::BLACK;
+    case Ansi::Color::RED: return Ansi::RED;
+    case Ansi::Color::GREEN: return Ansi::GREEN;
+    case Ansi::Color::YELLOW: return Ansi::YELLOW;
+    case Ansi::Color::BLUE: return Ansi::BLUE;
+    case Ansi::Color::MAGENTA: return Ansi::MAGENTA;
+    case Ansi::Color::CYAN: return Ansi::CYAN;
+    case Ansi::Color::WHITE: return Ansi::WHITE;
+    case Ansi::Color::BRIGHT_BLACK: return Ansi::BRIGHT_BLACK;
+    case Ansi::Color::BRIGHT_RED: return Ansi::BRIGHT_RED;
+    case Ansi::Color::BRIGHT_GREEN: return Ansi::BRIGHT_GREEN;
+    case Ansi::Color::BRIGHT_YELLOW: return Ansi::BRIGHT_YELLOW;
+    case Ansi::Color::BRIGHT_BLUE: return Ansi::BRIGHT_BLUE;
+    case Ansi::Color::BRIGHT_MAGENTA: return Ansi::BRIGHT_MAGENTA;
+    case Ansi::Color::BRIGHT_CYAN: return Ansi::BRIGHT_CYAN;
+    case Ansi::Color::BRIGHT_WHITE: return Ansi::BRIGHT_WHITE;
+    default: return Ansi::RESET;
+    }
+}
 class Logger {
-    std::string getT(LogLevel level) {
-        switch (level) {
-        case LogLevel::INFO: return Ansi::CYAN;
-        case LogLevel::WARN: return Ansi::YELLOW;
-        case LogLevel::ERR: return Ansi::RED;
-        case LogLevel::DEBUG: return Ansi::MAGENTA;
-        default: return Ansi::CYAN;
-        }
-    }
-
-    std::string getD(LogLevel level) {
-        switch (level) {
-        case LogLevel::INFO: return "[INFO]" + Ansi::BRIGHT_CYAN;
-        case LogLevel::WARN: return "[WARN]" + Ansi::BRIGHT_YELLOW;
-        case LogLevel::ERR: return "[ERROR]" + Ansi::BRIGHT_RED;
-        case LogLevel::DEBUG: return "[DEBUG]" + Ansi::BRIGHT_MAGENTA;
-        default: return Ansi::CYAN;
-        }
-    }
-
-    std::string getL(LogLevel level) {
-        switch (level) {
-        case LogLevel::INFO: return "[INFO]";
-        case LogLevel::WARN: return "[WARN]";
-        case LogLevel::ERR: return "[ERROR]";
-        case LogLevel::DEBUG: return "[DEBUG]";
-        default: return Ansi::CYAN;
-        }
-    }
-
-    std::string getA(Ansi::Color color) {
-        switch (color) {
-        case Ansi::Color::RESET: return Ansi::RESET;
-        case Ansi::Color::BLACK: return Ansi::BLACK;
-        case Ansi::Color::RED: return Ansi::RED;
-        case Ansi::Color::GREEN: return Ansi::GREEN;
-        case Ansi::Color::YELLOW: return Ansi::YELLOW;
-        case Ansi::Color::BLUE: return Ansi::BLUE;
-        case Ansi::Color::MAGENTA: return Ansi::MAGENTA;
-        case Ansi::Color::CYAN: return Ansi::CYAN;
-        case Ansi::Color::WHITE: return Ansi::WHITE;
-        case Ansi::Color::BRIGHT_BLACK: return Ansi::BRIGHT_BLACK;
-        case Ansi::Color::BRIGHT_RED: return Ansi::BRIGHT_RED;
-        case Ansi::Color::BRIGHT_GREEN: return Ansi::BRIGHT_GREEN;
-        case Ansi::Color::BRIGHT_YELLOW: return Ansi::BRIGHT_YELLOW;
-        case Ansi::Color::BRIGHT_BLUE: return Ansi::BRIGHT_BLUE;
-        case Ansi::Color::BRIGHT_MAGENTA: return Ansi::BRIGHT_MAGENTA;
-        case Ansi::Color::BRIGHT_CYAN: return Ansi::BRIGHT_CYAN;
-        case Ansi::Color::BRIGHT_WHITE: return Ansi::BRIGHT_WHITE;
-        default: return Ansi::RESET;
-        }
-    }
-
-    std::string getCT() {
-        time_t now = time(0);
-        tm* ltm = localtime(&now);
-        char buffer[9];
-        strftime(buffer, sizeof(buffer), "%H:%M:%S", ltm);
-        return std::string(buffer);
-    }
 public:
     Logger() = default;
 
-    void log(LogLevel level, const std::string text) {
-        std::cout << getT(level) << "[" << getCT() << "] " << getD(level) << " " << text << Ansi::RESET << '\n';
+    static void log(LogLevel level, const std::string text) {
+        std::cout << getT(level) << getD(level) << " " << text << Ansi::RESET << '\n';
     }
 
-    void log(LogLevel level, const std::string text, Ansi::Color color) {
-        std::cout << getT(level) << "[" << getCT() << "] " << getL(level) << " " << getA(color) << text << Ansi::RESET << '\n';
+    static void log(LogLevel level, const char *text, ...) {
+        std::cout << getT(level) << getD(level) << " " << text << Ansi::RESET << '\n';
+    }
+
+    static void log(LogLevel level, const std::string text, Ansi::Color color) {
+        std::cout << getT(level) << getL(level) << " " << getA(color) << text << Ansi::RESET << '\n';
     }
 };

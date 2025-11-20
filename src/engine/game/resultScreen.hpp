@@ -4,6 +4,7 @@
 #include <string>
 #include <SFML/Graphics.hpp>
 #include "game.hpp"
+#include "../animations/animations.hpp"
 
 struct ResultRows {
 	int x300;
@@ -22,17 +23,20 @@ class ResultScreen {
 	sf::Text x50;
 	sf::Text xMiss;
 	sf::Text xMaxCombo;
+
+	float animTimeMax = 2000.f;
+	float animTimeNow = -100.f;
 public:
 	ResultScreen(sf::Font& font) : font(font), xScore(font, "Score 0"),
 			x300(font, "x300 0"), x100(font, "x100 0"), x50(font, "x50 0"),
 			xMiss(font, "xMiss 0"), xMaxCombo(font, "MaxCombo 0") {
 
-		xScore.setPosition({ 20.f, 78.f }); 
-		x300.setPosition({ 20.f, 140.f }); /* adasd asddad */
-		x100.setPosition({ 120.f, 140.f });
-		x50.setPosition({ 220.f, 140.f });
-		xMiss.setPosition({ 320.f, 140.f });
-		xMaxCombo.setPosition({ 20.f, 200.f });
+		xScore.setPosition({ -1000.f, 78.f }); 
+		x300.setPosition({ -1000.f, 140.f }); /* adasd asddad */
+		x100.setPosition({ -1000.f, 140.f });
+		x50.setPosition({ -1000.f, 140.f });
+		xMiss.setPosition({ -1000.f, 140.f });
+		xMaxCombo.setPosition({ -1000.f, 200.f });
 
 		xScore.setCharacterSize(34u);
 		x300.setCharacterSize(24u);
@@ -57,14 +61,29 @@ public:
 		x50.setString(x50TEXT);
 		xMiss.setString(xMissTEXT);
 		xMaxCombo.setString(MaxComboTEXT);
+
+		animTimeNow = -100.f;
 	}
 
-	void draw(sf::RenderWindow& window) {
+	void draw(sf::RenderWindow& window, float dt) {
+		float x = Anim::easeInOutQuart(animTimeNow/animTimeMax);
+		//Logger::log(LogLevel::DEBUG, std::to_string(x));
+		xScore.setPosition({ -500.f + x * 520.f, 78.f });
+		x300.setPosition({ -500.f + x * 520.f, 140.f }); /* adasd asddad */
+		x100.setPosition({ -500.f + x * 620.f, 140.f });
+		x50.setPosition({ -500.f + x * 720.f, 140.f });
+		xMiss.setPosition({ -500.f + x * 820.f, 140.f });
+		xMaxCombo.setPosition({ -500.f + x * 520.f, 200.f });
+
 		window.draw(xScore);
 		window.draw(x300);
 		window.draw(x100);
 		window.draw(x50);
 		window.draw(xMiss);
 		window.draw(xMaxCombo);
+
+		if (animTimeNow < animTimeMax) {
+			animTimeNow += dt;
+		}
 	}
 };

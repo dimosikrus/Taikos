@@ -106,27 +106,30 @@ static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
                 break;
             case sf::Keyboard::Key::D:
                 audio.playSound("hitZ");
-                taps.time = audio.getPos();
+                taps.time = audio.getMusicPos();
                 taps.hs = HitSound::Whistle;
                 game.pushTap(taps);
                 break;
             case sf::Keyboard::Key::F:
                 audio.playSound("hitX");
-                taps.time = audio.getPos();
+                taps.time = audio.getMusicPos();
                 taps.hs = HitSound::Normal;
                 game.pushTap(taps);
                 break;
             case sf::Keyboard::Key::J:
                 audio.playSound("hitX");
-                taps.time = audio.getPos();
+                taps.time = audio.getMusicPos();
                 taps.hs = HitSound::Normal;
                 game.pushTap(taps);
                 break;
             case sf::Keyboard::Key::K:
                 audio.playSound("hitZ");
-                taps.time = audio.getPos();
+                taps.time = audio.getMusicPos();
                 taps.hs = HitSound::Whistle;
                 game.pushTap(taps);
+                break;
+            case sf::Keyboard::Key::U:
+                audio.setPos(audio.GetMusicLengthD_S() - 2.0);
                 break;
             case sf::Keyboard::Key::Up: ssm.up(); break;
             case sf::Keyboard::Key::Down: ssm.down(); break;
@@ -173,7 +176,7 @@ fn main() {
     sf::Vector2f windowFSize({static_cast<float>(window.getSize().x),static_cast<float>(window.getSize().y)});
     sf::Clock clock;
     logger.log(LogLevel::DEBUG, "WINDOW INITIALIZED");
-    //window.setFramerateLimit(1000);
+    window.setFramerateLimit(240);
 
     sf::Font BASICFONT(get_executable_path() / "assets\\arial.ttf");;
     
@@ -194,7 +197,7 @@ fn main() {
 
     FloatingMenu flmenu({ 200.f,200.f }, BASICFONT, gameState);
     ResultScreen results(BASICFONT);
-    Game game(audio, osuempty, BASICFONT, results, gameState);
+    Game game(audio, osuempty, BASICFONT, results, gameState, window);
     SongSelectionMenu ssm(BASICFONT, gameState, audio, game);
 
     VolumeGraph volGraph(audio);
@@ -262,7 +265,7 @@ fn main() {
                     prevState = gameState;
                     window.setTitle("Taikos Results");
                 }
-                results.draw(window);
+                results.draw(window, dt);
                 break;
             case GameState::SettingsMain: [[fallthrough]];
             case GameState::SettingsAudio: [[fallthrough]];

@@ -1,13 +1,20 @@
 #pragma once
 
-#include <iostream>
-#include <cmath>   // Р”Р»СЏ std::round
-#include <optional>
-#include <filesystem>
-#include <windows.h>
+#include <iostream> // std::cout
+#include <cmath>   // Для std::round
 #include <functional>
-#include <fstream>
 #include <algorithm>
+#include <optional> // return obj or null
+
+#include <filesystem> // fs
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#include <linux/limits.h>
+#endif
+#include <fstream> // file open
+
 #include "../game/osuTypes.hpp"
 #include "../logger.hpp"
 
@@ -22,22 +29,32 @@ inline bool checkFolderExist(const fs::path& path) {
 }
 
 fs::path get_executable_path() {
+#ifdef _WIN32
     WCHAR buffer[MAX_PATH];
-    GetModuleFileNameW(nullptr, buffer, MAX_PATH); // РџРѕР»СѓС‡Р°РµРј РїРѕР»РЅС‹Р№ РїСѓС‚СЊ Рє .exe
-    return fs::path(buffer).parent_path(); // РџСѓС‚СЊ Р±РµР· РёРјРµРЅРё С„Р°Р№Р»Р°
+    GetModuleFileNameW(nullptr, buffer, MAX_PATH);
+    return fs::path(buffer).parent_path();
+#else
+    char buffer[PATH_MAX];
+    ssize_t count = readlink("/proc/self/exe", buffer, PATH_MAX);
+    if (count == -1) {
+        throw std::runtime_error("Failed to get executable path");
+    }
+    buffer[count] = '\0';
+    return fs::path(buffer).parent_path();
+#endif
 }
 
 void removeSpaces(std::string& line) {
     size_t colon_pos = line.find(':');
     if (colon_pos != std::string::npos) {
-        // РќР°С…РѕРґРёРј РїРµСЂРІС‹Р№ РЅРµРїСЂРѕР±РµР»СЊРЅС‹Р№ СЃРёРјРІРѕР» РїРѕСЃР»Рµ РґРІРѕРµС‚РѕС‡РёСЏ
+        // Находим первый непробельный символ после двоеточия
         size_t first_non_space = line.find_first_not_of(' ', colon_pos + 1);
-        
+
         if (first_non_space != std::string::npos)
-            // РЈРґР°Р»СЏРµРј РїСЂРѕР±РµР»С‹ РјРµР¶РґСѓ ':' Рё РїРµСЂРІС‹Рј РЅРµРїСЂРѕР±РµР»СЊРЅС‹Рј СЃРёРјРІРѕР»РѕРј
+            // Удаляем пробелы между ':' и первым непробельным символом
             line.erase(colon_pos + 1, first_non_space - colon_pos - 1);
-        else 
-            // Р•СЃР»Рё РїРѕСЃР»Рµ ':' С‚РѕР»СЊРєРѕ РїСЂРѕР±РµР»С‹ - СѓРґР°Р»СЏРµРј РІСЃРµ
+        else
+            // Если после ':' только пробелы - удаляем все
             line.erase(colon_pos + 1);
     }
 }
@@ -45,10 +62,10 @@ void removeSpaces(std::string& line) {
 std::vector<std::string> split(const std::string& input, char delimiter) {
     std::vector<std::string> tokens;
     std::string token;
-    std::stringstream ss(input); // РЎРѕР·РґР°РµРј СЃС‚СЂРѕРєРѕРІС‹Р№ РїРѕС‚РѕРє РёР· РІС…РѕРґРЅРѕР№ СЃС‚СЂРѕРєРё
+    std::stringstream ss(input); // Создаем строковый поток из входной строки
 
-    // Р’ С†РёРєР»Рµ РёР·РІР»РµРєР°РµРј С‚РѕРєРµРЅС‹, СЂР°Р·РґРµР»РµРЅРЅС‹Рµ 'delimiter'
-    while (std::getline(ss, token, delimiter)) 
+    // В цикле извлекаем токены, разделенные 'delimiter'
+    while (std::getline(ss, token, delimiter))
         tokens.push_back(token);
 
     return tokens;
@@ -129,7 +146,7 @@ OsuFile parseOsuFile(const fs::path& path) {
 
             if (pos != std::string::npos) {
                 std::string value = line.substr(pos + 8);
-                osufile.creator= value;
+                osufile.creator = value;
             }
         }
 
@@ -199,10 +216,10 @@ std::vector<OsuFile> listDirOsus(const fs::path& path) {
     float count = 0;
     float now = 0;
 
-    for(const auto& file : fs::recursive_directory_iterator(path)) {
+    for (const auto& file : fs::recursive_directory_iterator(path)) {
         const auto& itFile = file.path();
 
-        if(chechFileExist(itFile)) {
+        if (chechFileExist(itFile)) {
             if (itFile.filename().extension().string().find(".osu") != std::string::npos) {
                 OsuFile osufile = parseOsuFile(itFile);
 

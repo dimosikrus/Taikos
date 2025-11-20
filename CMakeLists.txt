@@ -19,7 +19,13 @@ link_directories(
     ${CMAKE_SOURCE_DIR}/libs64/lib
 )
 
-add_executable(${PROJECT_NAME} src/main.cpp)
+set(Exes
+    src/main.cpp
+    src/engine/animations/animations.cpp
+    src/engine/audio/audio.cpp
+)
+
+add_executable(${PROJECT_NAME} ${Exes})
 
 set(Libs
     bass.lib

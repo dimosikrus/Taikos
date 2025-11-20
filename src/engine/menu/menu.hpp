@@ -12,6 +12,7 @@
 #include "../filesystem/filesystem.hpp"
 #include "../audio/audio.hpp"
 #include "../game/game.hpp"
+#include "../animations/animations.hpp"
 
 class MenuButton {
     sf::Image image;
@@ -159,7 +160,7 @@ class SongSelectionMenu {
                     font,
                     mapname,
                     [=]{
-                        if (audio.checkAudioIsActive())
+                        if (audio.checkMusicIsActive())
                             audio.stopAudio();
 
                         localGame.load(osusPaths.at(offset + i));
