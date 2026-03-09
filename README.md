@@ -1,4 +1,4 @@
-![Build Status](https://github.com/dimosikrus/Taikos/actions/workflows/ci.yml/badge.svg?branch=main)
+![Status](https://github.com/dimosikrus/Taikos/actions/workflows/multi-os-ci.yml/badge.svg)
 # Taikos
 > Support Osu! Beatmaps (only Taiko, only folders) :3
 >
