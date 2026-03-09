@@ -1,16 +1,18 @@
 # Taikos
+> Support Osu! Beatmaps (only Taiko, only folders) :3
+>
 ## Build
 > `Build now can only on Windows x64` `Linux / MacOS configuration Not configured in Cmake`
 > In Main Directory Project
 > Debug
 > ```bash
-> cmake -B buils -S .
+> cmake -B build -S .
 > cmake --build build
 > ./build/bin/Debug/Taikos.exe
 > ```
 > Release
 > ```bash
-> cmake -B buils -S . -DCMAKE_BUILD_TYPE=Release
+> cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
 > cmake --build build --config Release
 > ./build/bin/Debug/Taikos.exe
 > ```
