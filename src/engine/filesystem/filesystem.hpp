@@ -7,15 +7,16 @@
 #include <optional> // return obj or null
 
 #include <filesystem> // fs
+#include <fstream> // file open
+
 #ifdef _WIN32
 #include <windows.h>
+#elif defined(__APPLE__)
+#include <mach-o/dyld.h> // Специально для macOS
 #else
 #include <unistd.h>
-// #include <linux/limits.h>
 #include <climits>
-#include <limits>
 #endif
-#include <fstream> // file open
 
 #include "../game/osuTypes.hpp"
 #include "../logger.hpp"
@@ -35,11 +36,19 @@ fs::path get_executable_path() {
     WCHAR buffer[MAX_PATH];
     GetModuleFileNameW(nullptr, buffer, MAX_PATH);
     return fs::path(buffer).parent_path();
+#elif defined(__APPLE__)
+    char buffer[PATH_MAX];
+    uint32_t size = sizeof(buffer);
+    if (_NSGetExecutablePath(buffer, &size) == 0) {
+        return fs::path(buffer).parent_path();
+    }
+    throw std::runtime_error("Failed to get executable path on macOS");
 #else
+    // Это остается для Linux
     char buffer[PATH_MAX];
     ssize_t count = readlink("/proc/self/exe", buffer, PATH_MAX);
     if (count == -1) {
-        throw std::runtime_error("Failed to get executable path");
+        throw std::runtime_error("Failed to get executable path on Linux");
     }
     buffer[count] = '\0';
     return fs::path(buffer).parent_path();
