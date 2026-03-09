@@ -4,8 +4,7 @@
 
 #include <unordered_map>
 
-#include <bass/bass.h>
-#include <bass_fx/bass_fx.h>
+#include <bass.h>
 
 // FILESYSTEM BIT
 #include <filesystem>
