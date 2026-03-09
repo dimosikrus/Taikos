@@ -39,6 +39,14 @@ set(Exes
 
 add_executable(${PROJECT_NAME} ${Exes})
 
+if(APPLE)
+    # Говорим маку искать библиотеки в той же папке, где лежит сама программа
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        BUILD_WITH_INSTALL_RPATH TRUE
+        INSTALL_RPATH "@executable_path"
+    )
+endif()
+
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     ${BASS_LIB}
     SFML::Graphics
@@ -55,28 +63,26 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 
 # --- Специфичное для Windows ---
 if(WIN32)
-    # 1. Копируем bass.dll
+    # Копируем только DLL (BASS_LIB на Windows — это .lib, он не нужен в bin)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${BASS_DLL}" "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
     )
-
-    # 2. Копируем системные DLL из windows64req (Debug/Release)
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_SOURCE_DIR}/windows64req/$<CONFIG>"
-            "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
-        COMMENT "Copying runtime DLLs from windows64req/$<CONFIG>"
-    )
-
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/MACHINE:X64")
+    # ... (остальной твой код для DLL из windows64req) ...
 endif()
 
-# --- Специфичное для Linux (чтобы видел libbass.so рядом с exe) ---
+# --- Специфичное для Linux ---
 if(UNIX AND NOT APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
     set_target_properties(${PROJECT_NAME} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${BASS_LIB}" "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
+    )
+endif()
+
+# --- Специфичное для MacOS ---
+if(APPLE)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${BASS_LIB}" "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
+        COMMENT "Copying BASS dylib for MacOS"
     )
 endif()
