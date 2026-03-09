@@ -178,7 +178,8 @@ fn main() {
     logger.log(LogLevel::DEBUG, "WINDOW INITIALIZED");
     // window.setFramerateLimit(240);
 
-    sf::Font BASICFONT(get_executable_path() / "assets\\arial.ttf");;
+    // sf::Font BASICFONT(get_executable_path() / "assets/arial.ttf");
+    sf::Font BASICFONT(get_executable_path() / fs::path("assets/arial.ttf"));
     
     GameState prevState = gameState;
 
