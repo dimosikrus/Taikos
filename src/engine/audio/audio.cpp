@@ -1,13 +1,9 @@
 #include <iostream>
+#include <unordered_map>
+#include <filesystem>
 
 #include "audio.hpp"
 
-#include <unordered_map>
-
-#include <bass.h>
-
-// FILESYSTEM BIT
-#include <filesystem>
 namespace fs = std::filesystem;
 inline bool chechFileExist(const fs::path& path) {
     return fs::exists(path) && fs::is_regular_file(path);
@@ -16,11 +12,10 @@ inline bool chechFileExist(const fs::path& path) {
 inline bool checkFolderExist(const fs::path& path) {
     return fs::exists(path) && fs::is_directory(path);
 }
-// FILESYSTEM BIT
 
 DefaultSounds::DefaultSounds() {
-    pushSound("hitZ", fs::path("assets\\hitsound1.ogg"));
-    pushSound("hitX", fs::path("assets\\hitsound2.ogg"));
+    pushSound("hitZ", fs::path("assets/hitsound1.ogg"));
+    pushSound("hitX", fs::path("assets/hitsound2.ogg"));
 }
 void DefaultSounds::pushSound(const std::string& key, const fs::path& path) {
     if (chechFileExist(path))

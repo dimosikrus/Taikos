@@ -11,7 +11,9 @@
 #include <windows.h>
 #else
 #include <unistd.h>
-#include <linux/limits.h>
+// #include <linux/limits.h>
+#include <climits>
+#include <limits>
 #endif
 #include <fstream> // file open
 

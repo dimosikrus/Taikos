@@ -3,14 +3,11 @@
 #include <iostream>
 #include <unordered_map>
 #include <optional>
+#include <memory>
+#include <filesystem>
+#include <bass.h>
 
-#include <filesystem> // Добавь это, если нет
-namespace fs = std::filesystem; // Оставь это для удобства
-
-typedef unsigned long DWORD;
-typedef DWORD HSAMPLE;
-typedef DWORD HCHANNEL;
-typedef DWORD HSTREAM;
+namespace fs = std::filesystem;
 
 class DefaultSounds {
     std::unordered_map<std::string, fs::path> files;
