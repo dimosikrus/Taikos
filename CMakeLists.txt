@@ -60,6 +60,13 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
 )
 
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/dlls32bit/$<CONFIG>"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
+    COMMENT "Копируем все DLL из папки dlls32bit/$<CONFIG>"
+)
+
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     set_target_properties(${PROJECT_NAME} PROPERTIES
