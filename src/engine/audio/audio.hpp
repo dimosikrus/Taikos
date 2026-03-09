@@ -4,13 +4,8 @@
 #include <unordered_map>
 #include <optional>
 
-//#include <bass/bass.h>
-//#include <bass_fx/bass_fx.h>
-
-//#include <filesystem>
-//namespace fs = std::filesystem;
-namespace std::filesystem { class path; }
-namespace fs = std::filesystem;
+#include <filesystem> // Добавь это, если нет
+namespace fs = std::filesystem; // Оставь это для удобства
 
 typedef unsigned long DWORD;
 typedef DWORD HSAMPLE;
