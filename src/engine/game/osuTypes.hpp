@@ -31,10 +31,34 @@ enum class HitSound : uint8_t {
     Clap = 1 << 3
 };
 
+struct Keyss {
+	bool LK = false;
+	bool LD = false;
+	bool RD = false;
+	bool RK = false;
+};
+
+enum class KeyssKey {
+    None = 0,
+    LK = 1 << 0,
+    LD = 1 << 1,
+    RD = 1 << 2,
+    RK = 1 << 3,
+    CLEAR = 1 << 4
+};
+
+enum class TapsDir {
+    None = 0,
+    Up = 1 << 0,
+    Down = 1 << 1
+};
+
 struct Taps {
     int time;
     HitSound hs;
     bool hitted = false;
+    TapsDir down;
+    KeyssKey key;
 };
 
 struct Score {

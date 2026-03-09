@@ -15,8 +15,66 @@ using fn = int;
 #include "engine/logger.hpp"
 #include "engine/configmanager/configmanager.hpp"
 
+// FPS 2
+#include <chrono>
+#include <thread>
+//
+
 static bool spriteCollision(const sf::Sprite& sprite, const sf::Vector2f position) {
     return sprite.getGlobalBounds().contains(position);
+};
+
+float avg(const float arr[], int size) {
+    if (size <= 0) {
+        return 0.0f;
+    }
+
+    float sum = 0.0f;
+    for (int i = 0; i < size; ++i) {
+        sum += arr[i];
+    }
+
+    return sum / static_cast<float>(size);
+}
+void pushValueFpS(float arr[], int size, float val) {
+    for (int i = size-2; i >= 0; i--) {
+        arr[i + 1] = arr[i];
+    }
+    *arr = val;
+}
+
+class FPSCounter {
+private:
+    using clock = std::chrono::steady_clock;
+    using time_point = clock::time_point;
+    using duration = std::chrono::duration<float>;
+
+    time_point last_time;
+    float current_fps = 0.0f;
+    int frame_count = 0;
+    float update_interval = 0.5f; // Обновлять значение FPS каждые 0.5 сек
+    float accumulated_time = 0.0f;
+
+public:
+    FPSCounter() : last_time(clock::now()) {}
+
+    void update() {
+        auto now = clock::now();
+        duration delta = now - last_time;
+        last_time = now;
+
+        float dt = delta.count();
+        accumulated_time += dt;
+        frame_count++;
+
+        if (accumulated_time >= update_interval) {
+            current_fps = static_cast<float>(frame_count) / accumulated_time;
+            frame_count = 0;
+            accumulated_time = 0.0f;
+        }
+    }
+
+    float get_fps() const { return current_fps; }
 };
 
 static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
@@ -104,32 +162,40 @@ static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
                     audio.unPauseAudio();
                 }
                 break;
-            case sf::Keyboard::Key::E:
+            case sf::Keyboard::Key::R:
                 audio.resetPos();
                 game.reset();
                 break;
-            case sf::Keyboard::Key::D:
-                audio.playSound("hitZ");
+            case sf::Keyboard::Key::S:
+                // audio.playSound("hitZ");
                 taps.time = audio.getMusicPos();
                 taps.hs = HitSound::Whistle;
+                taps.down = TapsDir::Down;
+                taps.key = KeyssKey::LK;
                 game.pushTap(taps);
                 break;
-            case sf::Keyboard::Key::F:
-                audio.playSound("hitX");
+            case sf::Keyboard::Key::D:
+                // audio.playSound("hitX");
                 taps.time = audio.getMusicPos();
                 taps.hs = HitSound::Normal;
-                game.pushTap(taps);
-                break;
-            case sf::Keyboard::Key::J:
-                audio.playSound("hitX");
-                taps.time = audio.getMusicPos();
-                taps.hs = HitSound::Normal;
+                taps.down = TapsDir::Down;
+                taps.key = KeyssKey::LD;
                 game.pushTap(taps);
                 break;
             case sf::Keyboard::Key::K:
-                audio.playSound("hitZ");
+                // audio.playSound("hitX");
+                taps.time = audio.getMusicPos();
+                taps.hs = HitSound::Normal;
+                taps.down = TapsDir::Down;
+                taps.key = KeyssKey::RD;
+                game.pushTap(taps);
+                break;
+            case sf::Keyboard::Key::L:
+                // audio.playSound("hitZ");
                 taps.time = audio.getMusicPos();
                 taps.hs = HitSound::Whistle;
+                taps.down = TapsDir::Down;
+                taps.key = KeyssKey::RK;
                 game.pushTap(taps);
                 break;
             case sf::Keyboard::Key::U:
@@ -145,9 +211,45 @@ static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
         }
     }
 
+    if (event->is<sf::Event::FocusLost>()) {
+        Taps tap;
+        tap.key = KeyssKey::CLEAR;
+        game.pushTap(tap);
+        gameState = GameState::GamePause;
+    }
+
     if (event->is<sf::Event::KeyReleased>()) {
         sf::Keyboard::Key code = event->getIf<sf::Event::KeyReleased>()->code;
+        Taps taps;
         switch(code) {
+            case sf::Keyboard::Key::S:
+                taps.time = audio.getMusicPos();
+                taps.hs = HitSound::Whistle;
+                taps.down = TapsDir::Up;
+                taps.key = KeyssKey::LK;
+                game.pushTap(taps);
+                break;
+            case sf::Keyboard::Key::D:
+                taps.time = audio.getMusicPos();
+                taps.hs = HitSound::Normal;
+                taps.down = TapsDir::Up;
+                taps.key = KeyssKey::LD;
+                game.pushTap(taps);
+                break;
+            case sf::Keyboard::Key::K:
+                taps.time = audio.getMusicPos();
+                taps.hs = HitSound::Normal;
+                taps.down = TapsDir::Up;
+                taps.key = KeyssKey::RD;
+                game.pushTap(taps);
+                break;
+            case sf::Keyboard::Key::L:
+                taps.time = audio.getMusicPos();
+                taps.hs = HitSound::Whistle;
+                taps.down = TapsDir::Up;
+                taps.key = KeyssKey::RK;
+                game.pushTap(taps);
+                break;
             case sf::Keyboard::Key::LAlt: specialState = SpecialState::None; break;
             case sf::Keyboard::Key::RAlt: specialState = SpecialState::None; break;
             case sf::Keyboard::Key::LShift: specialState = SpecialState::None; break;
@@ -197,6 +299,7 @@ fn main() {
     float fps = 0;
     float dt = 1;
     int fpsDelayCounter = 0;
+    int msGraphCounter = 0;
 
     sf::Vector2f mousePosition(-0.1f,-0.1f);
 
@@ -209,28 +312,60 @@ fn main() {
 
     VolumeGraph volGraph(audio);
 
-    sf::Text fpsText(BASICFONT, "FPS: 0");
-    fpsText.setPosition({ 15.f, 15.f });
+    sf::Text fpsText2(BASICFONT, "FPS: 0");
+    sf::Text delayText(BASICFONT, "FPS: 0");
+    fpsText2.setPosition({ 15.f, 15.f });
+    delayText.setPosition({ 1200.f, 700.f });
+    fpsText2.setCharacterSize(18u);
+    delayText.setCharacterSize(16u);
+
+    float mss[30];
+    for (int i = 0; i < 30; i++) { // fill ms array
+        mss[i] = 0;
+    }
+    FPSCounter ffpss;
+
+    sf::RectangleShape delayGraph({ 0.f, 4.f });
+    delayGraph.setFillColor(sf::Color::Red);
+    delayGraph.setPosition({ 1280.f, 716.f });
 
     gameState = GameState::MenuIntro;
     logger.log(LogLevel::DEBUG, "Window events handler running...");
     window.setTitle("Taikos Idle");
 
     while (window.isOpen()) {
+        ffpss.update();
         clock.start();
         while (std::optional<sf::Event> event = window.pollEvent()) events(event, window, mousePosition, audio, gameState, specialState, flmenu, ssm, game, volGraph, configFile);
         //audio.updateEngine();
         window.clear(sf::Color::Black);
 
-        if (fpsDelayCounter > 500) {
-            std::ostringstream oss;
-            oss << "FPS: " << fps;
-            fpsText.setString(oss.str());
+        pushValueFpS(mss, 10, dt);
+        if (fpsDelayCounter > 100) {
             fpsDelayCounter = 0;
+            
+            std::ostringstream oss3;
+            oss3 << "ms: " << avg(mss, 30);
+            delayText.setString(oss3.str());
+        }
+        if (msGraphCounter > 200) {
+            msGraphCounter = 0;
+            
+            float mssval = avg(mss, 30);
+            delayGraph.setPosition({ 1280.f - (mssval * 100.f), 716.f });
+            delayGraph.setSize({ mssval * 100.f, 4.f });
         }
 
+        std::ostringstream oss2;
+        oss2 << "FPS: " << ffpss.get_fps();
+        fpsText2.setString(oss2.str());
+        
+
         fpsDelayCounter++;
-        window.draw(fpsText);
+        msGraphCounter++;
+        window.draw(fpsText2);
+        window.draw(delayText);
+        window.draw(delayGraph);
         volGraph.update();
         
         switch(gameState) {

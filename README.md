@@ -25,14 +25,15 @@
 > ```
 > ESC                      - back (or pause/unpause ingame)
 > Q                        - leave from beatmap
-> D, K                     - Blue (or yellow / magenta)
-> F, J                     - Red  (or yellow / magenta)
+> S, L                     - Blue (or yellow / magenta)
+> D, K                     - Red  (or yellow / magenta)
 > LCtrl + Mouse Scroll+/-  - HitSounds Volume (HitSounds hard linked on dfjk)
 > LAlt  + Mouse Scroll+/-  - Music Volume
-> E                        - Restart beatmap
+> R                        - Restart beatmap
 > Scroll (in Song Select)  - Scroll Beatmaps
 > Up/Down                  - Scroll Beatmaps
 > F5                       - Update Config (showing in game (Ka and Don)) (Volume not changing from config)
+> Out from window          - Auto Up Keys & Auto pause gameplay
 > ```
 ## TODO
 ```diff
