@@ -106,8 +106,8 @@ public:
                 if (pos != std::string::npos) {
                     std::vector<std::string> params = split(line.substr(sizeof("KaColour:") - 1), ',');
                     KaColour = params.size() < 4 ?
-                        sf::Color::Color(stoi(params.at(0)),stoi(params.at(1)),stoi(params.at(2))) :
-                        sf::Color::Color(stoi(params.at(0)),stoi(params.at(1)),stoi(params.at(2)),stoi(params.at(3)));
+                        sf::Color(stoi(params.at(0)),stoi(params.at(1)),stoi(params.at(2))) :
+                        sf::Color(stoi(params.at(0)),stoi(params.at(1)),stoi(params.at(2)),stoi(params.at(3)));
                 }
                 checked += 1;
             }
@@ -118,8 +118,8 @@ public:
                 if (pos != std::string::npos) {
                     std::vector<std::string> params = split(line.substr(sizeof("DonColour:") - 1), ',');
                     DonColour = params.size() < 4 ?
-                        sf::Color::Color(stoi(params.at(0)),stoi(params.at(1)),stoi(params.at(2))) :
-                        sf::Color::Color(stoi(params.at(0)),stoi(params.at(1)),stoi(params.at(2)),stoi(params.at(3)));
+                        sf::Color(stoi(params.at(0)),stoi(params.at(1)),stoi(params.at(2))) :
+                        sf::Color(stoi(params.at(0)),stoi(params.at(1)),stoi(params.at(2)),stoi(params.at(3)));
                 }
                 checked += 1;
             }
@@ -130,8 +130,8 @@ public:
                 if (pos != std::string::npos) {
                     std::vector<std::string> params = split(line.substr(sizeof("SliderColour:") - 1), ',');
                     SliderColour = params.size() < 4 ?
-                        sf::Color::Color(stoi(params.at(0)),stoi(params.at(1)),stoi(params.at(2))) :
-                        sf::Color::Color(stoi(params.at(0)),stoi(params.at(1)),stoi(params.at(2)),stoi(params.at(3)));
+                        sf::Color(stoi(params.at(0)),stoi(params.at(1)),stoi(params.at(2))) :
+                        sf::Color(stoi(params.at(0)),stoi(params.at(1)),stoi(params.at(2)),stoi(params.at(3)));
                 }
                 checked += 1;
             }
@@ -142,8 +142,8 @@ public:
                 if (pos != std::string::npos) {
                     std::vector<std::string> params = split(line.substr(sizeof("SpinnerColour:") - 1), ',');
                     SpinnerColour = params.size() < 4 ?
-                        sf::Color::Color(stoi(params.at(0)),stoi(params.at(1)),stoi(params.at(2))) :
-                        sf::Color::Color(stoi(params.at(0)),stoi(params.at(1)),stoi(params.at(2)),stoi(params.at(3)));
+                        sf::Color(stoi(params.at(0)),stoi(params.at(1)),stoi(params.at(2))) :
+                        sf::Color(stoi(params.at(0)),stoi(params.at(1)),stoi(params.at(2)),stoi(params.at(3)));
                 }
                 checked += 1;
             }
