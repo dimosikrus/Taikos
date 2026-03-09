@@ -6,8 +6,8 @@
 > In Main Directory Project
 > Debug
 > ```bash
-> cmake -B build -S .
-> cmake --build build
+> cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug
+> cmake --build build --config Debug
 > ./build/bin/Debug/Taikos.exe
 > ```
 > Release
