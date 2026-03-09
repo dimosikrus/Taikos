@@ -20,8 +20,8 @@ inline bool checkFolderExist(const fs::path& path) {
 // FILESYSTEM BIT
 
 DefaultSounds::DefaultSounds() {
-    pushSound("hitZ", fs::path("assets\\hitsound1.wav"));
-    pushSound("hitX", fs::path("assets\\hitsound2.wav"));
+    pushSound("hitZ", fs::path("assets\\hitsound1.ogg"));
+    pushSound("hitX", fs::path("assets\\hitsound2.ogg"));
 }
 void DefaultSounds::pushSound(const std::string& key, const fs::path& path) {
     if (chechFileExist(path))
@@ -155,7 +155,7 @@ bool Music::checkActive() {
 // Audio
 Audio::Audio() {
     if (!BASS_Init(-1, 44100, 0, nullptr, nullptr))
-        std::cerr << "Ошибка инициализации BASS: " << BASS_ErrorGetCode() << '\n';
+        std::cerr << "пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ BASS: " << BASS_ErrorGetCode() << '\n';
 }
 
 Audio::~Audio() { BASS_Free(); }
@@ -198,6 +198,7 @@ void Audio::setPos(double pos) {
 void Audio::loadAudio(const fs::path& path) {
     this->music.load(path);
     this->music.SetVolume(this->musicVolume);
+    this->sounds.setVolume(this->soundsVolume);
 }
 
 void Audio::playAudio() {

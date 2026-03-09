@@ -60,83 +60,89 @@ struct HitObject {
     int time;
     Type type;
     HitSound hitSound;
-    int length = 0; // Slider;
+    double length = 0; // Slider;
+    int endTime = 0; // Spinner;
+    bool spinnerTail = false;
+    bool sliderTail = false;
 };
 
 
-//std::ostream& operator<<(std::ostream& os, const Type type) {
-//    int d = 0;
-//    if (type == Type::None) os << "Type.None";
-//    else {
-//        os << "Type.";
-//        if ((type & Type::HitCircle) != Type::None) {
-//            os << (d != 0 ? "|" : "") << "HitCircle";
-//            d++;
-//        }
-//        if ((type & Type::Slider) != Type::None) {
-//            os << (d != 0 ? "|" : "") << "Slider";
-//            d++;
-//        }
-//        if ((type & Type::NewCombo) != Type::None) {
-//            d++;
-//            os << (d != 0 ? "|" : "") << "NewCombo";
-//        }
-//        if ((type & Type::Spinner) != Type::None) {
-//            os << (d != 0 ? "|" : "") << "Spinner";
-//            d++;
-//        }
-//        if ((type & Type::Skip1) != Type::None) {
-//            os << (d != 0 ? "|" : "") << "Skip1";
-//            d++;
-//        }
-//        if ((type & Type::Skip2) != Type::None) {
-//            os << (d != 0 ? "|" : "") << "Skip2";
-//            d++;
-//        }
-//        if ((type & Type::Skip3) != Type::None) {
-//            os << (d != 0 ? "|" : "") << "Skip3";
-//            d++;
-//        }
-//    }
-//    return os;
-//}
-//
-//std::ostream& operator<<(std::ostream& os, const HitSound hitSound) {
-//    int d = 0;
-//    if (hitSound == HitSound::None) os << "HitSound.None";
-//    else {
-//        os << "HitSound.";
-//        if ((hitSound & HitSound::Normal) != HitSound::None) {
-//            os << (d != 0 ? "|" : "") << "Normal";
-//            d++;
-//        }
-//        if ((hitSound & HitSound::Whistle) != HitSound::None) {
-//            os << (d != 0 ? "|" : "") << "Whistle";
-//            d++;
-//        }
-//        if ((hitSound & HitSound::Finish) != HitSound::None) {
-//            os << (d != 0 ? "|" : "") << "Finish";
-//            d++;
-//        }
-//        if ((hitSound & HitSound::Clap) != HitSound::None) {
-//            os << (d != 0 ? "|" : "") << "Clap";
-//            d++;
-//        }
-//    }
-//    return os;
-//}
-//
-//std::ostream& operator<<(std::ostream& os, const HitObject& hobj) {
-//    os << "HitObject("
-//        << "hitted=" << (hobj.hitted ? "true" : "false")
-//        << ", next=" << (hobj.next ? "true" : "false")
-//        << ", time=" << hobj.time
-//        << ", " << hobj.type
-//        << ", " << hobj.hitSound
-//        << ", length=" << hobj.length
-//        << ")";
-//    return os;
-//}
+std::ostream& operator<<(std::ostream& os, const Type type) {
+   int d = 0;
+   if (type == Type::None) os << "Type.None";
+   else {
+       os << "Type.";
+       if ((type & Type::HitCircle) != Type::None) {
+           os << (d != 0 ? "|" : "") << "HitCircle";
+           d++;
+       }
+       if ((type & Type::Slider) != Type::None) {
+           os << (d != 0 ? "|" : "") << "Slider";
+           d++;
+       }
+       if ((type & Type::NewCombo) != Type::None) {
+           d++;
+           os << (d != 0 ? "|" : "") << "NewCombo";
+       }
+       if ((type & Type::Spinner) != Type::None) {
+           os << (d != 0 ? "|" : "") << "Spinner";
+           d++;
+       }
+       if ((type & Type::Skip1) != Type::None) {
+           os << (d != 0 ? "|" : "") << "Skip1";
+           d++;
+       }
+       if ((type & Type::Skip2) != Type::None) {
+           os << (d != 0 ? "|" : "") << "Skip2";
+           d++;
+       }
+       if ((type & Type::Skip3) != Type::None) {
+           os << (d != 0 ? "|" : "") << "Skip3";
+           d++;
+       }
+   }
+   return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const HitSound hitSound) {
+   int d = 0;
+   if (hitSound == HitSound::None) os << "HitSound.None";
+   else {
+       os << "HitSound.";
+       if ((hitSound & HitSound::Normal) != HitSound::None) {
+           os << (d != 0 ? "|" : "") << "Normal";
+           d++;
+       }
+       if ((hitSound & HitSound::Whistle) != HitSound::None) {
+           os << (d != 0 ? "|" : "") << "Whistle";
+           d++;
+       }
+       if ((hitSound & HitSound::Finish) != HitSound::None) {
+           os << (d != 0 ? "|" : "") << "Finish";
+           d++;
+       }
+       if ((hitSound & HitSound::Clap) != HitSound::None) {
+           os << (d != 0 ? "|" : "") << "Clap";
+           d++;
+       }
+   }
+   return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const HitObject& hobj) {
+   os << "HitObject("
+       << "hitted=" << (hobj.hitted ? "true" : "false")
+       << ", next=" << (hobj.next ? "true" : "false")
+       << ", time=" << hobj.time
+       << ", " << hobj.type
+       << ", " << hobj.hitSound
+       << ", length=" << hobj.length
+       << ", endTime=" << hobj.endTime
+       << ", spinnerTail=" << hobj.spinnerTail
+       << ", sliderTail=" << hobj.sliderTail
+       << ")";
+   return os;
+}
 
 struct OsuFile {
     fs::path filepath;

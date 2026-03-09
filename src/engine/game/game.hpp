@@ -4,12 +4,14 @@
 #include <SFML/Graphics.hpp>
 #include <deque>
 #include <memory>
+#include <cmath>
 #include "../audio/audio.hpp"
 #include "../gamestates.hpp"
 #include "osuTypes.hpp"
 #include "resultScreen.hpp"
-#include "../animations/animations.hpp"
 #include "../filesystem/filesystem.hpp"
+#include "../animations/animations.hpp"
+#include "../animations/easing.h" 
 
 class DrawableObj {
 	float radius;
@@ -26,30 +28,73 @@ public:
 	DrawableObj (sf::Vector2f position, sf::Color color, float radius, sf::Texture& hct, sf::Texture& hcot) :
 			pos(position), circlefill(radius), circleborder(radius), radius(radius),
 			hct(hct), hcot(hcot), hcs(hct), hcos(hcot) {
-		//circlefill.setFillColor(color);
-		//circleborder.setFillColor(sf::Color::Transparent);
-		//circleborder.setOutlineColor(sf::Color::White);
-		//circleborder.setOutlineThickness(border);
-		//circlefill.setPosition(sf::Vector2f(pos.x, pos.y - radius / 2.f));
-		//circleborder.setPosition(sf::Vector2f(pos.x, pos.y - radius / 2.f));
 		hcs.setTexture(hct);
 		hcos.setTexture(hcot);
 		hcs.setColor(color);
-		sf::FloatRect sizeg = hcs.getGlobalBounds();
+		sf::FloatRect sizeg  = hcs.getGlobalBounds();
 		sf::FloatRect sizego = hcos.getGlobalBounds();
-		//hcs.setScale({ 1 / (sizeg.size.x / radius), 1 / (sizeg.size.y / radius) });
-		//hcos.setScale({ 1 / (sizego.size.x / radius), 1 / (sizego.size.y / radius) });
-		hcs.setScale({ .75f + (radius-40.f) / 100, .75f + (radius - 40.f) / 100 });
+		hcs.setScale ({ .75f + (radius - 40.f) / 100, .75f + (radius - 40.f) / 100 });
 		hcos.setScale({ .75f + (radius - 40.f) / 100, .75f + (radius - 40.f) / 100 });
-		hcs.setPosition(sf::Vector2f(pos.x, pos.y - radius / 2.f));
-		hcos.setPosition(sf::Vector2f(pos.x, pos.y - radius / 2.f));
+		this->pos = sf::Vector2f(pos.x - radius, pos.y - radius);
+		hcs.setPosition (pos);
+		hcos.setPosition(pos);
 	}
 
 	void draw(sf::RenderWindow& window) {
-		//window.draw(circlefill);
-		//window.draw(circleborder);
 		window.draw(hcs);
 		window.draw(hcos);
+	}
+};
+
+class HitCirclesEffect {
+	float radius;
+	float border = 5.f;
+	
+	sf::CircleShape circlefill;
+	sf::CircleShape circleborder;
+	sf::Vector2f pos;
+
+	sf::Texture& hct;
+	sf::Texture& hcot;
+	sf::Sprite hcs;
+	sf::Sprite hcos;
+
+	float lifetime = 0.f;
+public:
+	bool active = true;
+	HitCirclesEffect (sf::Vector2f position, sf::Color color, float radius, sf::Texture& hct, sf::Texture& hcot) :
+			pos(position), circlefill(radius), circleborder(radius), radius(radius),
+			hct(hct), hcot(hcot), hcs(hct), hcos(hcot) {
+		hcs.setTexture(hct);
+		hcos.setTexture(hcot);
+		hcs.setColor(color);
+
+		sf::FloatRect sizeg  = hcs.getGlobalBounds();
+		sf::FloatRect sizego = hcos.getGlobalBounds();
+
+		hcs.setScale ({ .75f + (radius - 40.f) / 100, .75f + (radius - 40.f) / 100 });
+		hcos.setScale({ .75f + (radius - 40.f) / 100, .75f + (radius - 40.f) / 100 });
+		this->pos = sf::Vector2f(pos.x - radius, pos.y - radius);
+		hcs.setPosition (pos);
+		hcos.setPosition(pos);
+	}
+	void draw(sf::RenderWindow& window) {
+		if (active) {
+			window.draw(hcs);
+			window.draw(hcos);
+		}
+	}
+	void update(float dt) {
+		lifetime += dt;
+		if (lifetime >= 727.f) {
+			active = false;
+		}
+		sf::Vector2f position {
+			pos.x - Anim::easeInBack   (lifetime / 727.f) * 100.f,
+			pos.y + Anim::easeOutBounce(lifetime / 727.f) * 350.f
+		};
+		hcs.setPosition(position);
+		hcos.setPosition(position);
 	}
 };
 
@@ -59,6 +104,7 @@ class Game {
 	int offset = 0;
 	std::deque<DrawableObj> drawable;
 	std::vector<HitObject> hitobjects;
+	std::vector<HitCirclesEffect> hitCirclesEffect;
 	Audio& audio;
 	int startOffset = 0;
 	bool audioStarted = false;
@@ -80,27 +126,27 @@ class Game {
 	std::vector<Taps> taps;
 	sf::Vector2f mousePosition{ 0.f, 0.f };
 
-	void checkHit(int HitObjectTime, int TapTime) {
+	bool checkHit(int HitObjectTime, int TapTime) {
 		if (TapTime > HitObjectTime - 20 && TapTime < HitObjectTime + 20) {
 			score.x300++;
 			score.score += score.combo != 0 ? 300 * score.combo : 300;
-			return;
+			return true;
 		}
 
 		if (TapTime > HitObjectTime - 40 && TapTime < HitObjectTime + 40) {
 			score.x100++;
 			score.score += score.combo != 0 ? 100 * score.combo : 100;
-			return;
+			return true;
 		}
 
 		if (TapTime > HitObjectTime - 55 && TapTime < HitObjectTime + 55) {
 			score.x50++;
 			score.score += score.combo != 0 ? 50 * score.combo : 50;
-			return;
+			return true;
 		}
 
 		score.x0++;
-		return;
+		return false;
 	}
 
 	void checkCombo() {
@@ -174,6 +220,9 @@ public:
 		for (size_t i = drawable.size(); i > 0; i--) {
 			drawable.at(i-1).draw(window);
 		}
+		for (size_t i = hitCirclesEffect.size(); i > 0; i--) {
+			hitCirclesEffect.at(i-1).draw(window);
+		}
 		window.draw(text1);
 		window.draw(text2);
 		window.draw(text3);
@@ -203,8 +252,20 @@ public:
 		}
 	}
 
-	void update() {
-		if (audio.getMusicPos() + 200 > hitobjects.at(hitobjects.size() - 1).time) {
+	sf::Vector2f rotatePoint(float x, float y, float cx, float cy, float angleDeg) {
+		const float angle = angleDeg * 3.141 / 180;
+		
+		const float dx = x - cx;
+		const float dy = y - cy;
+		
+		const float xPrime = dx * cos(angle) - dy * sin(angle);
+		const float yPrime = dx * sin(angle) + dy * cos(angle);
+
+		return sf::Vector2f({ xPrime + cx, yPrime + cy });
+	}
+
+	void update(float dt) {
+		if (audio.getMusicPos() - 727 > hitobjects.back().time) {
 			gameIsRunning = false;
 			std::cout << "Map is End." << "\n";
 			localState = GameState::GameResults;
@@ -244,6 +305,16 @@ public:
 		}
 
 		checkCombo();
+		std::vector<bool> removeIndices;
+		for(auto& hce : hitCirclesEffect) {
+			hce.update(dt);
+			if(hce.active == false) {
+				removeIndices.emplace_back(true);
+			}
+		}
+		if (removeIndices.size() == hitCirclesEffect.size() && hitCirclesEffect.size() > 0) {
+			hitCirclesEffect.clear();
+		}
 
 		// Screen Log
 		std::ostringstream oss1;
@@ -257,15 +328,15 @@ public:
 		text3.setString(oss3.str());
 
 		int audioPos = 0;
-		if (!audioStarted) {
-			audioPos = prevTimer.getElapsedTime().asMilliseconds() - startOffset;
-		} else {
-			audioPos = audio.getMusicPos();
+
+		switch (audioStarted) {
+			case false: audioPos = prevTimer.getElapsedTime().asMilliseconds() - startOffset; break;
+			default: audioPos = audio.getMusicPos(); break;
 		}
 
 		drawable.clear();
 		ofScanning = true;
-		bool first = true;
+		// bool first = true;
 		int index = offset;
 
 		while (ofScanning) { // start with offset ; scanning in range ; break on greater than range break ; offset > scan range > break;
@@ -273,71 +344,137 @@ public:
 
 			HitObject& hobj = hitobjects.at(index);
 
-			if (hobj.time > audioPos + 1280) { ofScanning = false; break; }
+			if (hobj.time > audioPos + 1450) { ofScanning = false; break; }
 
-			if (first && hobj.time >= audioPos - 200 && hobj.time <= audioPos + 1280) {
-				first = false;
+			if (hobj.time < audioPos - 150) { // hobj.time >= audioPos - 100 && // && hobj.time <= audioPos - 100 // first
+				// first = false;
 				offset = index;
 				hobj.next = true;
 			}
 
+			float a = static_cast<float>(audioPos);
+			float b = static_cast<float>(hobj.time);
+
+			// sf::Vector2f drawCoords{150.f + (b - a) / 1480.f * 1130.f, 200.f};
+			// Математическое упрощение 1130 / 1480 = .7635135f
+
+			sf::Vector2f drawCoords{150.f + (b - a) * 1.3f, 200.f};
+			float drawSize = (hobj.hitSound & HitSound::Finish) == HitSound::Finish ? 50.f : 40.f;
+
+			// std::cout << hobj << '\n';
+
 			// Taps
 			for (Taps& tap : taps) { // all taps at frame
 				if (hobj.time < audioPos + 70 && hobj.time > audioPos - 70 && !hobj.hitted && !tap.hitted) {
-					int result = hobj.time - tap.time;
-					if ((hobj.type & Type::HitCircle) != Type::None) {
-						if (((hobj.hitSound & HitSound::Whistle) != HitSound::None ||
-								(hobj.hitSound & HitSound::Clap) != HitSound::None) &&
-								(tap.hs & HitSound::Whistle) != HitSound::None) {
-							hobj.hitted = true;
-							BLUES++;
-							score.combo++;
-							tap.hitted = true;
-							checkHit(hobj.time, tap.time);
-						}
-
-						if (((hobj.hitSound & HitSound::Normal) != HitSound::None ||
-								hobj.hitSound == HitSound::None) &&
-								(tap.hs & HitSound::Normal) != HitSound::None) {
-							hobj.hitted = true;
-							REDS++;
-							score.combo++;
-							tap.hitted = true;
-							checkHit(hobj.time, tap.time);
-						}
-					} else {
-						hobj.hitted = true;
-						OTHERS++;
-						score.combo++;
-						tap.hitted = true;
-						checkHit(hobj.time, tap.time);
+					if ((hobj.type & Type::HitCircle) == Type::HitCircle) {
+						if (((hobj.hitSound & HitSound::Whistle) != HitSound::None
+								|| (hobj.hitSound & HitSound::Clap) != HitSound::None)
+								&& tap.hs == HitSound::Whistle) {
+							hobj.hitted = true; BLUES++; score.combo++; tap.hitted = true;
+							if(checkHit(hobj.time, tap.time)) {
+								hitCirclesEffect.emplace_back(
+									drawCoords,
+									sf::Color::Blue, drawSize,
+									hct, hcot
+								);
+							};
+						} else if (((hobj.hitSound & HitSound::Normal) != HitSound::None
+								|| hobj.hitSound == HitSound::None)
+								&& tap.hs == HitSound::Normal) {
+							hobj.hitted = true; REDS++; score.combo++; tap.hitted = true;
+							if(checkHit(hobj.time, tap.time)) {
+								hitCirclesEffect.emplace_back(
+									drawCoords,
+									sf::Color::Red, drawSize,
+									hct, hcot
+								);
+							};
+						} else if ((hobj.hitSound == HitSound::Finish // Костыль
+								|| ((hobj.hitSound & HitSound::Finish) == HitSound::Finish // Костыль
+									&& (hobj.hitSound & HitSound::Normal) == HitSound::Normal))
+								&& tap.hs == HitSound::Normal) { // Костыль
+							hobj.hitted = true; REDS++; score.combo++; tap.hitted = true; // Костыль
+							if(checkHit(hobj.time, tap.time)) { // Костыль
+								hitCirclesEffect.emplace_back( // Костыль
+									drawCoords, // Костыль
+									sf::Color::Red, drawSize, // Костыль
+									hct, hcot // Костыль
+								); // Костыль
+							}; // Костыль
+						} // Костыль
+						// else {
+						// 	hobj.hitted = true; OTHERS++; score.combo++; tap.hitted = true;
+						// 	if(checkHit(hobj.time, tap.time)) {
+						// 		hitCirclesEffect.emplace_back(
+						// 			drawCoords,
+						// 			sf::Color::White, 30.f,
+						// 			hct, hcot
+						// 		);
+						// 	};
+						// }
+					} else if ((hobj.type & Type::Slider) == Type::Slider && !hobj.sliderTail) {
+						hobj.hitted = true; OTHERS++; score.combo++; tap.hitted = true;
+						if(checkHit(hobj.time, tap.time)) {
+							hitCirclesEffect.emplace_back(
+								drawCoords,
+								sf::Color::Yellow, drawSize,
+								hct, hcot
+							);
+						};
+					} else if ((hobj.type & Type::Spinner) == Type::Spinner && !hobj.spinnerTail) {
+						hobj.hitted = true; OTHERS++; score.combo++; tap.hitted = true;
+						if(checkHit(hobj.time, tap.time)) {
+							hitCirclesEffect.emplace_back(
+								drawCoords,
+								sf::Color::Magenta, 40.f,
+								hct, hcot
+							);
+						};
 					}
+					// else {
+					// 	hobj.hitted = true; OTHERS++; score.combo++; tap.hitted = true;
+					// 	if(checkHit(hobj.time, tap.time)) {
+					// 		hitCirclesEffect.emplace_back(
+					// 			drawCoords,
+					// 			sf::Color::White, 30.f,
+					// 			hct, hcot
+					// 		);
+					// 	};
+					// }
 				}
 			}
 			// End Taps
 
-			if (!hobj.hitted && hobj.time < audioPos - 150) {
+			if (!hobj.hitted && hobj.time < audioPos - 150 && !hobj.sliderTail && !hobj.spinnerTail) {
 				hobj.hitted = true;
 				score.x0++;
 			}
 
-			float a = static_cast<float>(audioPos);
-			float b = static_cast<float>(hobj.time);
 			if (!hobj.hitted) {
-				if ((hobj.type & Type::HitCircle) != Type::None) {
-					if ((hobj.hitSound & HitSound::Whistle) != HitSound::None ||
-						(hobj.hitSound & HitSound::Clap) != HitSound::None) {
-						drawable.emplace_back(sf::Vector2f(150.f + (b - a) / 1480.f * 1130.f, 200.f), sf::Color::Blue, (hobj.hitSound & HitSound::Finish) == HitSound::Finish ? 50.f : 40.f, hct, hcot);
-					} else {
-						drawable.emplace_back(sf::Vector2f(150.f + (b - a) / 1480.f * 1130.f, 200.f), sf::Color::Red, (hobj.hitSound & HitSound::Finish) == HitSound::Finish ? 50.f : 40.f, hct, hcot);
-					}
-				} else if ((hobj.type & Type::Slider) != Type::None) {
-					drawable.emplace_back(sf::Vector2f(150.f + (b - a) / 1480.f * 1130.f, 200.f), sf::Color::Yellow, (hobj.hitSound & HitSound::Finish) == HitSound::Finish ? 50.f : 40.f, hct, hcot);
-				} else if ((hobj.type & Type::Spinner) != Type::None) {
-					drawable.emplace_back(sf::Vector2f(150.f + (b - a) / 1480.f * 1130.f, 200.f), sf::Color::Green, 40.f, hct, hcot);
+				if ((hobj.type & Type::HitCircle) == Type::HitCircle) {
+					if (((hobj.hitSound & HitSound::Whistle) == HitSound::Whistle)
+						|| ((hobj.hitSound & HitSound::Clap) == HitSound::Clap)) {
+							drawable.emplace_back(drawCoords, sf::Color::Blue, drawSize, hct, hcot);
+						} else {
+							drawable.emplace_back(drawCoords, sf::Color::Red, drawSize, hct, hcot);
+						}
+				} else if ((hobj.type & Type::Slider) == Type::Slider
+						&& !hobj.sliderTail) {
+					drawable.emplace_back(drawCoords, sf::Color::Yellow, drawSize, hct, hcot);
+				} else if ((hobj.type & Type::Slider) == Type::Slider
+						&& !hobj.sliderTail) {
+					drawable.emplace_back(drawCoords, sf::Color::Yellow, drawSize - 5.f, hct, hcot);
+				} else if ((hobj.type & Type::Spinner) == Type::Spinner
+						&& !hobj.spinnerTail) {
+					drawable.emplace_back(drawCoords, sf::Color::Magenta, 40.f, hct, hcot);
+				} else if ((hobj.type & Type::Spinner) == Type::Spinner
+						&& hobj.spinnerTail) {
+					drawable.emplace_back(drawCoords, sf::Color::Magenta, 35.f, hct, hcot);
+				} else {
+					drawable.emplace_back(drawCoords, sf::Color::White, 30.f, hct, hcot);
 				}
 			}
-			//
+			
 			index++;
 		}
 		taps.clear();
@@ -387,118 +524,6 @@ public:
 		//
 		std::cout << "C/S/S: " << countOfCircles << "/" << countOfSliders << "/" << countOfSpinners << '\n';
 	}
-
-	//void handleEvents(std::optional<sf::Event> event) {
-	//	sf::Mouse::Button mButton;
-	//	float scrolled;
-
-	//	if (event->is<sf::Event::Closed>()) window.close();
-
-	//	if (event->is<sf::Event::MouseButtonPressed>()) {
-	//		mButton = event->getIf<sf::Event::MouseButtonPressed>()->button;
-	//		switch (mButton) {
-	//		case sf::Mouse::Button::Left:
-	//			break;
-	//		case sf::Mouse::Button::Right:
-	//			break;
-	//		default: break;
-	//		}
-	//	}
-
-	//	if (event->is<sf::Event::MouseMoved>()) {
-	//		mousePosition = sf::Vector2f(event->getIf<sf::Event::MouseMoved>()->position);
-	//	}
-
-	//	if (event->is<sf::Event::MouseWheelScrolled>()) {
-	//		scrolled = event->getIf<sf::Event::MouseWheelScrolled>()->delta;
-	//	}
-
-	//	if (event->is<sf::Event::KeyPressed>()) {
-	//		sf::Keyboard::Key code = event->getIf<sf::Event::KeyPressed>()->code;
-	//		Taps taps;
-	//		switch (code) {
-	//			//case sf::Keyboard::Key::Escape: window.close(); break;
-	//		case sf::Keyboard::Key::Escape:
-	//			if (gameState == GameState::MenuSongSelection) {
-	//				gameState = GameState::MenuIntro;
-	//				audio.stopAudio();
-	//				break;
-	//			}
-	//			if (gameState == GameState::GamePlaying) {
-	//				gameState = GameState::GamePause;
-	//				if (!audio.paused()) {
-	//					audio.pauseAudio();
-	//				}
-	//				break;
-	//			}
-	//			if (gameState == GameState::GamePause) {
-	//				gameState = GameState::GamePlaying;
-	//				if (audio.paused()) {
-	//					audio.unPauseAudio();
-	//				}
-	//				break;
-	//			}
-	//			if (gameState == GameState::GameResults) {
-	//				gameState = GameState::MenuSongSelection;
-	//				break;
-	//			}
-	//			break;
-	//		case sf::Keyboard::Key::Q:
-	//			gameState = GameState::MenuSongSelection;
-	//			if (audio.paused()) {
-	//				audio.unPauseAudio();
-	//			}
-	//			break;
-	//		case sf::Keyboard::Key::E:
-	//			audio.resetPos();
-	//			game.reset();
-	//			break;
-	//		case sf::Keyboard::Key::D:
-	//			audio.playSound("hitZ");
-	//			taps.time = audio.getMusicPos();
-	//			taps.hs = HitSound::Whistle;
-	//			game.pushTap(taps);
-	//			break;
-	//		case sf::Keyboard::Key::F:
-	//			audio.playSound("hitX");
-	//			taps.time = audio.getMusicPos();
-	//			taps.hs = HitSound::Normal;
-	//			game.pushTap(taps);
-	//			break;
-	//		case sf::Keyboard::Key::J:
-	//			audio.playSound("hitX");
-	//			taps.time = audio.getMusicPos();
-	//			taps.hs = HitSound::Normal;
-	//			game.pushTap(taps);
-	//			break;
-	//		case sf::Keyboard::Key::K:
-	//			audio.playSound("hitZ");
-	//			taps.time = audio.getMusicPos();
-	//			taps.hs = HitSound::Whistle;
-	//			game.pushTap(taps);
-	//			break;
-	//		case sf::Keyboard::Key::U:
-	//			int maxLength = audio.GetMusicLength();
-	//			break;
-	//		case sf::Keyboard::Key::Up: ssm.up(); break;
-	//		case sf::Keyboard::Key::Down: ssm.down(); break;
-	//		case sf::Keyboard::Key::LAlt: specialState = SpecialState::Alt; break;
-	//		case sf::Keyboard::Key::RAlt: specialState = SpecialState::Alt; break;
-	//		case sf::Keyboard::Key::LShift: specialState = SpecialState::Shift; break;
-	//		case sf::Keyboard::Key::LControl: specialState = SpecialState::Control; break;
-	//		default: break;
-	//		}
-	//	}
-
-	//	if (event->is<sf::Event::KeyReleased>()) {
-	//		sf::Keyboard::Key code = event->getIf<sf::Event::KeyReleased>()->code;
-	//		switch (code) {
-	//		case sf::Keyboard::Key::W:
-	//			break;
-	//		default: break;
-	//		}
-	//	}
-	//}
 };
 
 class VolumeGraph {

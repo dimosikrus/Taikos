@@ -173,7 +173,7 @@ class SongSelectionMenu {
 public:
     SongSelectionMenu(sf::Font& font, GameState& state, Audio& audio, Game& game) :
                     font(font), localstate(state), audio(audio), localGame(game) {
-        //osusPaths = std::move(listDirOsus(fs::path("C:\\cpps\\test2\\Songs")));
+        // osusPaths = std::move(listDirOsus(fs::path("C:\\osu!\\Songs")));
         osusPaths = std::move(listDirOsus(get_executable_path() / "Songs"));
 
         if (osusPaths.size() >= limit)

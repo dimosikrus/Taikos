@@ -1,7 +1,7 @@
 #pragma once
 
 #include <iostream> // std::cout
-#include <cmath>   // Для std::round
+#include <cmath>   // пїЅпїЅпїЅ std::round
 #include <functional>
 #include <algorithm>
 #include <optional> // return obj or null
@@ -47,14 +47,14 @@ fs::path get_executable_path() {
 void removeSpaces(std::string& line) {
     size_t colon_pos = line.find(':');
     if (colon_pos != std::string::npos) {
-        // Находим первый непробельный символ после двоеточия
+        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
         size_t first_non_space = line.find_first_not_of(' ', colon_pos + 1);
 
         if (first_non_space != std::string::npos)
-            // Удаляем пробелы между ':' и первым непробельным символом
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ ':' пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
             line.erase(colon_pos + 1, first_non_space - colon_pos - 1);
         else
-            // Если после ':' только пробелы - удаляем все
+            // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ ':' пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ
             line.erase(colon_pos + 1);
     }
 }
@@ -62,9 +62,9 @@ void removeSpaces(std::string& line) {
 std::vector<std::string> split(const std::string& input, char delimiter) {
     std::vector<std::string> tokens;
     std::string token;
-    std::stringstream ss(input); // Создаем строковый поток из входной строки
+    std::stringstream ss(input); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 
-    // В цикле извлекаем токены, разделенные 'delimiter'
+    // пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 'delimiter'
     while (std::getline(ss, token, delimiter))
         tokens.push_back(token);
 
@@ -178,15 +178,20 @@ std::vector<HitObject> parseHitObjects(const fs::path& path) {
 
     while (std::getline(file, line)) {
         if (readhits) {
+            // std::cout << "LINE: " << line << '\n';
             std::vector<std::string> params = split(line, ',');
             HitObject hitObj;
             hitObj.time = stoi(params.at(2));
             hitObj.type = static_cast<Type>(stoi(params.at(3)));
             hitObj.hitSound = static_cast<HitSound>(stoi(params.at(4)));
-
-            if (params.size() > 7)
-                hitObj.length = stoi(params.at(7));
-
+            if ((hitObj.type & Type::Spinner) == Type::Spinner && params.size() > 5) {
+                hitObj.endTime = stoi(params.at(5));
+                // std::cout << "params5: " << params.at(5) << '\n';
+            }
+            if ((hitObj.type & Type::Slider) == Type::Slider && params.size() > 7) {
+                hitObj.length = stod(params.at(7));
+                // std::cout << "params6: " << params.at(7) << '\n';
+            }
             hitobjects.emplace_back(hitObj);
         }
 
@@ -194,6 +199,38 @@ std::vector<HitObject> parseHitObjects(const fs::path& path) {
             readhits = true;
     }
     file.close();
+    std::vector<HitObject> newObjects;
+    for(const auto& hobj : hitobjects) {
+        // std::cout << "TEST: " << hobj << '\n';
+        if ((hobj.type & Type::Spinner) == Type::Spinner && !hobj.spinnerTail) {
+            float step = static_cast<float>(hobj.endTime - hobj.time) / 9.f;
+            // std::cout << hobj << " Step: " << step << '\n';
+            for (int i = 1; i < 10; ++i) {
+                int newTime = static_cast<int>(hobj.time + (i * step));
+                HitObject newHitObject = hobj;
+                newHitObject.time = newTime;
+                newHitObject.spinnerTail = true;
+                newObjects.push_back(newHitObject);
+                // std::cout << "Index: " << i << " NewTime: " << newTime << '\n';
+            }
+        }
+        if ((hobj.type & Type::Slider) == Type::Slider && !hobj.sliderTail) {
+            int EndTime = hobj.time + static_cast<int>(hobj.length * 4);
+            // std::cout << " EndTime: " << EndTime << '\n';
+            float step = static_cast<float>(EndTime - hobj.time) / 9.f;
+            // std::cout << hobj << " Step: " << step << '\n';
+            for (int i = 1; i < 10; ++i) {
+                int newTime = static_cast<int>(hobj.time + (i * step));
+                if (newTime < 0) newTime = 0;
+                HitObject newHitObject = hobj;
+                newHitObject.time = newTime;
+                newHitObject.sliderTail = true;
+                newObjects.push_back(newHitObject);
+                // std::cout << "Index: " << i << " NewTime: " << newTime << '\n';
+            }
+        }
+    }
+    hitobjects.insert(hitobjects.end(), newObjects.begin(), newObjects.end());
     // sorted
     std::sort(hitobjects.begin(), hitobjects.end(), fromMinToMax);
     //

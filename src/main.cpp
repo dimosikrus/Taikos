@@ -176,7 +176,7 @@ fn main() {
     sf::Vector2f windowFSize({static_cast<float>(window.getSize().x),static_cast<float>(window.getSize().y)});
     sf::Clock clock;
     logger.log(LogLevel::DEBUG, "WINDOW INITIALIZED");
-    window.setFramerateLimit(240);
+    // window.setFramerateLimit(240);
 
     sf::Font BASICFONT(get_executable_path() / "assets\\arial.ttf");;
     
@@ -248,7 +248,7 @@ fn main() {
                     prevState = gameState;
                     window.setTitle("Taikos " + game.getSelected());
                 }
-                game.update();
+                game.update(dt);
                 game.show(window);
                 break;
             case GameState::GamePause:

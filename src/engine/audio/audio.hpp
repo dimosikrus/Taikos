@@ -95,8 +95,8 @@ public:
 class Audio {
     Sounds sounds;
     Music music;
-    float musicVolume = .4f;
-    float soundsVolume = .3f;
+    float musicVolume = .1f;
+    float soundsVolume = .1f;
     bool pausedAudio = false;
 
     DefaultSounds defaultSounds;
