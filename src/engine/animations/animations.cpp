@@ -1,10 +1,12 @@
 #include "iostream"
-#include "cmath"
+#include <cmath>
 
 #include "animations.hpp"
 
 float Anim::easeInOutQuart(float x) {
-    return x < 0.5f ? 8.f * x * x * x * x : 1.f - std::powf(-2.f * x + 2.f, 4.f) / 2.f;
+    if (x < 0.5f) return 8.f * x * x * x * x;
+    float n = -2.f * x + 2.f;
+    return 1.f - (n * n * n * n) / 2.f;
 }
 
 float Anim::easeOutBounce(float x) {

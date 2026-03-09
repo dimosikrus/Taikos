@@ -159,7 +159,7 @@ class SongSelectionMenu {
                     sf::Color(102, 102, 153, 180),
                     font,
                     mapname,
-                    [=]{
+                    [=, this]{
                         if (audio.checkMusicIsActive())
                             audio.stopAudio();
 
