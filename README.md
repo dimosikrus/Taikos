@@ -32,6 +32,7 @@
 > E                        - Restart beatmap
 > Scroll (in Song Select)  - Scroll Beatmaps
 > Up/Down                  - Scroll Beatmaps
+> F5                       - Update Config (showing in game (Ka and Don)) (Volume not changing from config)
 > ```
 ## TODO
 ```diff

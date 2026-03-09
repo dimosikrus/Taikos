@@ -12,6 +12,7 @@
 #include "../filesystem/filesystem.hpp"
 #include "../animations/animations.hpp"
 #include "../animations/easing.h" 
+#include "../configmanager/configmanager.hpp"
 
 class DrawableObj {
 	float radius;
@@ -101,6 +102,7 @@ public:
 class Game {
 	OsuFile& osufile;
 	GameState& localState;
+	ConfigFile& configFile;
 	int offset = 0;
 	std::deque<DrawableObj> drawable;
 	std::vector<HitObject> hitobjects;
@@ -180,8 +182,8 @@ public:
 	int comboMissBuffer = 0;
 	Score score;
 
-	Game(Audio& audio, OsuFile& osufile, sf::Font& font, ResultScreen& results, GameState& state, sf::RenderWindow& window) : audio(audio), window(window), osufile(osufile), font(font), text1(font), text2(font), text3(font),
-			centerRect({ 4.f, 120.f }), x0Rect({ 140.f, 40.f }), x50Rect({ 110.f, 40.f }), x100Rect({ 80.f, 40.f }), x300Rect({ 40.f, 40.f }), localResults(results), localState(state) {
+	Game(Audio& audio, OsuFile& osufile, sf::Font& font, ResultScreen& results, GameState& state, sf::RenderWindow& window, ConfigFile& configFile) : audio(audio), window(window), osufile(osufile), font(font), text1(font), text2(font), text3(font),
+			centerRect({ 4.f, 120.f }), x0Rect({ 140.f, 40.f }), x50Rect({ 110.f, 40.f }), x100Rect({ 80.f, 40.f }), x300Rect({ 40.f, 40.f }), localResults(results), localState(state), configFile(configFile) {
 		centerRect.setFillColor(sf::Color::Magenta);
 		x0Rect.setFillColor(sf::Color::Red);
 		x50Rect.setFillColor(sf::Color::Yellow);
@@ -339,7 +341,7 @@ public:
 		// bool first = true;
 		int index = offset;
 
-		while (ofScanning) { // start with offset ; scanning in range ; break on greater than range break ; offset > scan range > break;
+		while (ofScanning) {
 			if (index + 1 > hitobjects.size()) { ofScanning = false; break; }
 
 			HitObject& hobj = hitobjects.at(index);
@@ -356,8 +358,7 @@ public:
 			float b = static_cast<float>(hobj.time);
 
 			// sf::Vector2f drawCoords{150.f + (b - a) / 1480.f * 1130.f, 200.f};
-			// Математическое упрощение 1130 / 1480 = .7635135f
-
+			
 			sf::Vector2f drawCoords{150.f + (b - a) * 1.3f, 200.f};
 			float drawSize = (hobj.hitSound & HitSound::Finish) == HitSound::Finish ? 50.f : 40.f;
 
@@ -374,7 +375,7 @@ public:
 							if(checkHit(hobj.time, tap.time)) {
 								hitCirclesEffect.emplace_back(
 									drawCoords,
-									sf::Color::Blue, drawSize,
+									configFile.getKaColour(), drawSize,
 									hct, hcot
 								);
 							};
@@ -385,39 +386,29 @@ public:
 							if(checkHit(hobj.time, tap.time)) {
 								hitCirclesEffect.emplace_back(
 									drawCoords,
-									sf::Color::Red, drawSize,
+									configFile.getDonColour(), drawSize,
 									hct, hcot
 								);
 							};
-						} else if ((hobj.hitSound == HitSound::Finish // Костыль
-								|| ((hobj.hitSound & HitSound::Finish) == HitSound::Finish // Костыль
+						} else if ((hobj.hitSound == HitSound::Finish
+								|| ((hobj.hitSound & HitSound::Finish) == HitSound::Finish
 									&& (hobj.hitSound & HitSound::Normal) == HitSound::Normal))
-								&& tap.hs == HitSound::Normal) { // Костыль
-							hobj.hitted = true; REDS++; score.combo++; tap.hitted = true; // Костыль
-							if(checkHit(hobj.time, tap.time)) { // Костыль
-								hitCirclesEffect.emplace_back( // Костыль
-									drawCoords, // Костыль
-									sf::Color::Red, drawSize, // Костыль
-									hct, hcot // Костыль
-								); // Костыль
-							}; // Костыль
-						} // Костыль
-						// else {
-						// 	hobj.hitted = true; OTHERS++; score.combo++; tap.hitted = true;
-						// 	if(checkHit(hobj.time, tap.time)) {
-						// 		hitCirclesEffect.emplace_back(
-						// 			drawCoords,
-						// 			sf::Color::White, 30.f,
-						// 			hct, hcot
-						// 		);
-						// 	};
-						// }
+								&& tap.hs == HitSound::Normal) {
+							hobj.hitted = true; REDS++; score.combo++; tap.hitted = true;
+							if(checkHit(hobj.time, tap.time)) {
+								hitCirclesEffect.emplace_back(
+									drawCoords,
+									configFile.getDonColour(), drawSize,
+									hct, hcot
+								);
+							};
+						}
 					} else if ((hobj.type & Type::Slider) == Type::Slider && !hobj.sliderTail) {
 						hobj.hitted = true; OTHERS++; score.combo++; tap.hitted = true;
 						if(checkHit(hobj.time, tap.time)) {
 							hitCirclesEffect.emplace_back(
 								drawCoords,
-								sf::Color::Yellow, drawSize,
+								configFile.getSliderColour(), drawSize,
 								hct, hcot
 							);
 						};
@@ -426,21 +417,11 @@ public:
 						if(checkHit(hobj.time, tap.time)) {
 							hitCirclesEffect.emplace_back(
 								drawCoords,
-								sf::Color::Magenta, 40.f,
+								configFile.getSpinnerColour(), 40.f,
 								hct, hcot
 							);
 						};
 					}
-					// else {
-					// 	hobj.hitted = true; OTHERS++; score.combo++; tap.hitted = true;
-					// 	if(checkHit(hobj.time, tap.time)) {
-					// 		hitCirclesEffect.emplace_back(
-					// 			drawCoords,
-					// 			sf::Color::White, 30.f,
-					// 			hct, hcot
-					// 		);
-					// 	};
-					// }
 				}
 			}
 			// End Taps
@@ -454,22 +435,22 @@ public:
 				if ((hobj.type & Type::HitCircle) == Type::HitCircle) {
 					if (((hobj.hitSound & HitSound::Whistle) == HitSound::Whistle)
 						|| ((hobj.hitSound & HitSound::Clap) == HitSound::Clap)) {
-							drawable.emplace_back(drawCoords, sf::Color::Blue, drawSize, hct, hcot);
+							drawable.emplace_back(drawCoords, configFile.getKaColour(), drawSize, hct, hcot);
 						} else {
-							drawable.emplace_back(drawCoords, sf::Color::Red, drawSize, hct, hcot);
+							drawable.emplace_back(drawCoords, configFile.getDonColour(), drawSize, hct, hcot);
 						}
 				} else if ((hobj.type & Type::Slider) == Type::Slider
 						&& !hobj.sliderTail) {
-					drawable.emplace_back(drawCoords, sf::Color::Yellow, drawSize, hct, hcot);
+					drawable.emplace_back(drawCoords, configFile.getSliderColour(), drawSize, hct, hcot);
 				} else if ((hobj.type & Type::Slider) == Type::Slider
 						&& !hobj.sliderTail) {
-					drawable.emplace_back(drawCoords, sf::Color::Yellow, drawSize - 5.f, hct, hcot);
+					drawable.emplace_back(drawCoords, configFile.getSliderColour(), drawSize - 5.f, hct, hcot);
 				} else if ((hobj.type & Type::Spinner) == Type::Spinner
 						&& !hobj.spinnerTail) {
-					drawable.emplace_back(drawCoords, sf::Color::Magenta, 40.f, hct, hcot);
+					drawable.emplace_back(drawCoords, configFile.getSpinnerColour(), 40.f, hct, hcot);
 				} else if ((hobj.type & Type::Spinner) == Type::Spinner
 						&& hobj.spinnerTail) {
-					drawable.emplace_back(drawCoords, sf::Color::Magenta, 35.f, hct, hcot);
+					drawable.emplace_back(drawCoords, configFile.getSpinnerColour(), 35.f, hct, hcot);
 				} else {
 					drawable.emplace_back(drawCoords, sf::Color::White, 30.f, hct, hcot);
 				}

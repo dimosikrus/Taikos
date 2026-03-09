@@ -8,6 +8,7 @@
 
 #include <filesystem> // fs
 #include <fstream> // file open
+#include <string>
 
 #ifdef _WIN32
 #include <windows.h>

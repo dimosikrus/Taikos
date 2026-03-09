@@ -13,6 +13,7 @@ using fn = int;
 #include "engine/game/game.hpp"
 #include "engine/game/resultScreen.hpp"
 #include "engine/logger.hpp"
+#include "engine/configmanager/configmanager.hpp"
 
 static bool spriteCollision(const sf::Sprite& sprite, const sf::Vector2f position) {
     return sprite.getGlobalBounds().contains(position);
@@ -21,7 +22,7 @@ static bool spriteCollision(const sf::Sprite& sprite, const sf::Vector2f positio
 static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
             sf::Vector2f& mousePosition, Audio& audio, GameState& gameState,
             SpecialState& specialState, FloatingMenu& flmenu, SongSelectionMenu& ssm,
-            Game& game, VolumeGraph& volGraph) {
+            Game& game, VolumeGraph& volGraph, ConfigFile& configfile) {
     sf::Mouse::Button mButton;
 
     if (event->is<sf::Event::Closed>()) window.close();
@@ -69,6 +70,9 @@ static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
         Taps taps;
         switch(code) {
         //case sf::Keyboard::Key::Escape: window.close(); break;
+            case sf::Keyboard::Key::F5:
+                configfile.loadConfig();
+                break;
             case sf::Keyboard::Key::Escape:
                 if (gameState == GameState::MenuSongSelection) { 
                     gameState = GameState::MenuIntro;
@@ -166,7 +170,9 @@ fn main() {
 
     Audio audio;
     audio.loadDefault();
-    audio.setSoundsVolume(0.4f);
+    ConfigFile configFile;
+    audio.setSoundsVolume(configFile.getSoundsVol());
+    audio.setAudioVolume(configFile.getMisucVol());
 
     logger.log(LogLevel::DEBUG, "AUDIO INITIALIZED");
 
@@ -198,7 +204,7 @@ fn main() {
 
     FloatingMenu flmenu({ 200.f,200.f }, BASICFONT, gameState);
     ResultScreen results(BASICFONT);
-    Game game(audio, osuempty, BASICFONT, results, gameState, window);
+    Game game(audio, osuempty, BASICFONT, results, gameState, window, configFile);
     SongSelectionMenu ssm(BASICFONT, gameState, audio, game);
 
     VolumeGraph volGraph(audio);
@@ -212,7 +218,7 @@ fn main() {
 
     while (window.isOpen()) {
         clock.start();
-        while (std::optional<sf::Event> event = window.pollEvent()) events(event, window, mousePosition, audio, gameState, specialState, flmenu, ssm, game, volGraph);
+        while (std::optional<sf::Event> event = window.pollEvent()) events(event, window, mousePosition, audio, gameState, specialState, flmenu, ssm, game, volGraph, configFile);
         //audio.updateEngine();
         window.clear(sf::Color::Black);
 
