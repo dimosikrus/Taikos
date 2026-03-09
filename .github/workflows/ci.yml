@@ -1,0 +1,43 @@
+name: CMake Build and Release
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    # Меняем на Windows, чтобы использовать MSVC и работать с .dll
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Configure CMake
+      # Указываем архитектуру x64 (-A x64), так как ты используешь 64-битные либы
+      run: cmake -B build -S . -A x64 -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      # Запускаем сборку
+      run: cmake --build build --config Release
+
+    - name: Pack Build
+      # Выполняем только если это пуш тега (релиз)
+      if: startsWith(github.ref, 'refs/tags/')
+      shell: bash
+      run: |
+        cd build/bin
+        tar -a -c -f ../../Taikos-Windows-x64.zip *
+
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: Taikos-Windows-x64.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
