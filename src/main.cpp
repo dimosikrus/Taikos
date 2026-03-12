@@ -20,6 +20,10 @@ using fn = int;
 #include <thread>
 //
 
+#ifdef _WIN32
+    #include <windows.h>
+#endif
+
 static bool spriteCollision(const sf::Sprite& sprite, const sf::Vector2f position) {
     return sprite.getGlobalBounds().contains(position);
 };
@@ -43,6 +47,21 @@ void pushValueFpS(float arr[], int size, float val) {
     *arr = val;
 }
 
+void set_high_priority() {
+#ifdef _WIN32
+    HANDLE hProcess = GetCurrentProcess();
+    
+    // Set Priority HIGH_PRIORITY_CLASS
+    if (SetPriorityClass(hProcess, HIGH_PRIORITY_CLASS)) {
+        std::cout << "Windows Priority now is High.\n";
+    } else {
+        std::cerr << "Error set priority: " << GetLastError() << "\n";
+    }
+#else
+    // macos and linux ignore this code
+#endif
+}
+
 class FPSCounter {
 private:
     using clock = std::chrono::steady_clock;
@@ -52,7 +71,7 @@ private:
     time_point last_time;
     float current_fps = 0.0f;
     int frame_count = 0;
-    float update_interval = 0.5f; // Обновлять значение FPS каждые 0.5 сек
+    float update_interval = 0.5f; // Update fps every 0.5s
     float accumulated_time = 0.0f;
 
 public:
@@ -215,7 +234,9 @@ static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
         Taps tap;
         tap.key = KeyssKey::CLEAR;
         game.pushTap(tap);
-        gameState = GameState::GamePause;
+        if (gameState == GameState::GamePlaying) {
+            gameState = GameState::GamePause;
+        }
     }
 
     if (event->is<sf::Event::KeyReleased>()) {
@@ -260,6 +281,7 @@ static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
 };
 
 fn main() {
+    // set_high_priority();
     Logger logger;
 
     GameState gameState = GameState::Loading;

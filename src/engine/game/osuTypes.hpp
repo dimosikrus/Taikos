@@ -88,6 +88,23 @@ struct HitObject {
     int endTime = 0; // Spinner;
     bool spinnerTail = false;
     bool sliderTail = false;
+    float speed = 1.f;
+    float bpm = 1.f;
+    float showBpm = 1.f;
+};
+
+struct TimingPoint {
+    // time,beatLength,meter,sampleSet,sampleIndex,volume,uninherited,effects
+    // 3,333.333333333333,4,1,0,100,1,0
+    // 35002,-100,4,1,0,100,0,0
+    int time;
+    float beatLength;
+    int meter;
+    int sampleSet;
+    int sampleIndex;
+    int volume;
+    bool uninherited; // int 0 or 1
+    int effects;
 };
 
 
@@ -164,7 +181,25 @@ std::ostream& operator<<(std::ostream& os, const HitObject& hobj) {
        << ", endTime=" << hobj.endTime
        << ", spinnerTail=" << hobj.spinnerTail
        << ", sliderTail=" << hobj.sliderTail
+       << ", speed=" << hobj.speed
+       << ", bpm=" << hobj.bpm
+       << ", showBpm=" << hobj.showBpm
        << ")";
+   return os;
+}
+
+
+std::ostream& operator<<(std::ostream& os, const TimingPoint& tp) {
+   os << "TimingPoint("
+        << "time=" << tp.time
+        << ", beatLength=" << tp.beatLength
+        << ", meter=" << tp.meter
+        << ", sampleSet=" << tp.sampleSet
+        << ", sampleIndex=" << tp.sampleIndex
+        << ", volume=" << tp.volume
+        << ", uninherited=" << (tp.uninherited ? "true" : "false")
+        << ", effects=" << tp.effects
+        << ")";
    return os;
 }
 

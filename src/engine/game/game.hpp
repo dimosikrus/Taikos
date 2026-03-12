@@ -110,6 +110,7 @@ class Game {
 	int offset = 0;
 	std::deque<DrawableObj> drawable;
 	std::vector<HitObject> hitobjects;
+	std::vector<TimingPoint> timingPoints;
 	std::vector<HitCirclesEffect> hitCirclesEffect;
 	Audio& audio;
 	int startOffset = 0;
@@ -189,6 +190,9 @@ class Game {
 
 	sf::Texture hct;
 	sf::Texture hcot;
+	float bpm = 1.f;
+	float showBpm = 1.f;
+	float speed = 1.f;
 public:
 	int REDS = 0,
 		BLUES = 0,
@@ -287,6 +291,9 @@ public:
 		for (size_t i = drawable.size(); i > 0; i--) {
 			drawable.at(i-1).draw(window);
 		}
+		// for (size_t i = 0; i < drawable.size(); i++) {
+		// 	drawable.at(i).draw(window);
+		// }
 		for (size_t i = hitCirclesEffect.size(); i > 0; i--) {
 			hitCirclesEffect.at(i-1).draw(window);
 		}
@@ -318,6 +325,7 @@ public:
 		score.score = 0;
 		audioStarted = false;
 		atimerStarted = false;
+		bpm = 1.f;
 		for (auto& hobj : hitobjects) {
 			hobj.hitted = false;
 			hobj.next = false;
@@ -390,7 +398,7 @@ public:
 
 		// Screen Log
 		std::ostringstream oss1;
-		oss1 << "R/B/O " << REDS << "/" << BLUES << "/" << OTHERS;
+		oss1 << "R/B/O " << REDS << "/" << BLUES << "/" << OTHERS << "   bL: " << bpm << " dbL: " << showBpm;
 		text1.setString(oss1.str());
 		std::ostringstream oss2;
 		oss2 << "x0/x50/x100/x300 " << score.x0 << "/" << score.x50 << "/" << score.x100 << "/" << score.x300;
@@ -432,25 +440,52 @@ public:
 
 		changeClickDown();
 
+		int hitobjectLimiter = 1000;
+		int hitobjectNum = 0;
+
 		while (ofScanning) {
 			if (index + 1 > hitobjects.size()) { ofScanning = false; break; }
 
 			HitObject& hobj = hitobjects.at(index);
 
-			if (hobj.time > audioPos + 1450) { ofScanning = false; break; }
+			// if (hobj.time > audioPos + 3500) { ofScanning = false; break; } // Ограничитель справа
 
-			if (hobj.time < audioPos - 150) { // hobj.time >= audioPos - 100 && // && hobj.time <= audioPos - 100 // first
+			if (hobj.time < audioPos) { // hobj.time >= audioPos - 100 && // && hobj.time <= audioPos - 100 // first
 				// first = false;
 				offset = index;
 				hobj.next = true;
+
+				bpm = hobj.bpm;
+				showBpm = hobj.showBpm;
 			}
 
 			float a = static_cast<float>(audioPos);
 			float b = static_cast<float>(hobj.time);
 
 			// sf::Vector2f drawCoords{150.f + (b - a) / 1480.f * 1130.f, 200.f};
-			
-			sf::Vector2f drawCoords{150.f + (b - a) * 1.3f, 212.f};
+
+			// for(TimingPoint& tp : timingPoints) {
+			// 	if (tp.time < hobj.time && tp.uninherited) {
+			// 		bpm = tp.beatLength;
+			// 		showBpm = tp.beatLength;
+			// 		speed = showBpm * .004f;
+			// 	} else if (tp.time < hobj.time && !tp.uninherited) {
+			// 		showBpm = bpm * (tp.beatLength + 200)  / 100;
+			// 		speed = showBpm * .004f;
+			// 	}
+			// }
+
+			// speed = 1.f;
+
+			// sf::Vector2f drawCoords{150.f + (b - a) * 1.3f, 212.f};
+			sf::Vector2f drawCoords{150.f + (b - a) * hobj.speed, 212.f};
+			if (drawCoords.x < 0 || drawCoords.x > 0.50000e+06f) {
+				drawCoords.x = 150.f;
+			}
+			// if (hobj.time < audioPos + 160) {
+			// 	std::cout << hobj << drawCoords.x << '\n';
+			// }
+
 			float drawSize = (hobj.hitSound & HitSound::Finish) == HitSound::Finish ? 50.f : 40.f;
 
 			// std::cout << hobj << '\n';
@@ -519,33 +554,42 @@ public:
 			}
 			// End Taps
 
-			if (!hobj.hitted && hobj.time < audioPos - 150 && !hobj.sliderTail && !hobj.spinnerTail) {
+			if (!hobj.hitted && hobj.time < audioPos - 90 && !hobj.sliderTail && !hobj.spinnerTail) {
 				hobj.hitted = true;
 				score.x0++;
 			}
+			if (!hobj.hitted && drawCoords.x < 90.f) hobj.hitted = true;
 
-			if (!hobj.hitted) {
+			if (!hobj.hitted && drawCoords.x <= 1280.f && hitobjectNum <= hitobjectLimiter) {
+			// if (!hobj.hitted && drawCoords.x <= 1280.f) {
 				if ((hobj.type & Type::HitCircle) == Type::HitCircle) {
 					if (((hobj.hitSound & HitSound::Whistle) == HitSound::Whistle)
 						|| ((hobj.hitSound & HitSound::Clap) == HitSound::Clap)) {
 							drawable.emplace_back(drawCoords, configFile.getKaColour(), drawSize, hct, hcot);
+							hitobjectNum++;
 						} else {
 							drawable.emplace_back(drawCoords, configFile.getDonColour(), drawSize, hct, hcot);
+							hitobjectNum++;
 						}
 				} else if ((hobj.type & Type::Slider) == Type::Slider
 						&& !hobj.sliderTail) {
 					drawable.emplace_back(drawCoords, configFile.getSliderColour(), drawSize, hct, hcot);
+					hitobjectNum++;
 				} else if ((hobj.type & Type::Slider) == Type::Slider
 						&& !hobj.sliderTail) {
 					drawable.emplace_back(drawCoords, configFile.getSliderColour(), drawSize - 5.f, hct, hcot);
+					hitobjectNum++;
 				} else if ((hobj.type & Type::Spinner) == Type::Spinner
 						&& !hobj.spinnerTail) {
 					drawable.emplace_back(drawCoords, configFile.getSpinnerColour(), 40.f, hct, hcot);
+					hitobjectNum++;
 				} else if ((hobj.type & Type::Spinner) == Type::Spinner
 						&& hobj.spinnerTail) {
 					drawable.emplace_back(drawCoords, configFile.getSpinnerColour(), 35.f, hct, hcot);
+					hitobjectNum++;
 				} else {
 					drawable.emplace_back(drawCoords, sf::Color::White, 30.f, hct, hcot);
+					hitobjectNum++;
 				}
 			}
 			
@@ -569,6 +613,21 @@ public:
 		std::cout << "Selected: " << getSelectedFromOsuFile(osufile) << '\n';
 		this->osufile = osufile;
 		hitobjects = std::move(parseHitObjects(osufile.filepath));
+		timingPoints = std::move(parseTimingPoints(osufile.filepath));
+		for(HitObject& hobj : hitobjects) {
+			for(TimingPoint& tp : timingPoints) {
+				if (hobj.time >= tp.time && tp.uninherited) {
+					hobj.bpm = tp.beatLength;
+					hobj.showBpm = hobj.bpm;
+					hobj.speed = hobj.bpm * .004f;
+					// std::cout << "TIMING: " << hobj.speed << " TP: " << tp << '\n';
+				} else if (hobj.time >= tp.time && !tp.uninherited) {
+					hobj.showBpm = hobj.bpm * ((tp.beatLength + 200) * .01f);
+					hobj.speed = hobj.bpm * .004f;
+					// std::cout << "INHERITED: " << hobj.speed << " TP: " << tp << '\n';
+				}
+			}
+		}
 		//
 		startOffset = 0;
 		int firstObjPos = hitobjects.at(0).time;

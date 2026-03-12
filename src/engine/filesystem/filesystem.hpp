@@ -1,7 +1,7 @@
 #pragma once
 
 #include <iostream> // std::cout
-#include <cmath>   // ��� std::round
+#include <cmath>   // std::round
 #include <functional>
 #include <algorithm>
 #include <optional> // return obj or null
@@ -59,14 +59,11 @@ fs::path get_executable_path() {
 void removeSpaces(std::string& line) {
     size_t colon_pos = line.find(':');
     if (colon_pos != std::string::npos) {
-        // ������� ������ ������������ ������ ����� ���������
         size_t first_non_space = line.find_first_not_of(' ', colon_pos + 1);
 
         if (first_non_space != std::string::npos)
-            // ������� ������� ����� ':' � ������ ������������ ��������
             line.erase(colon_pos + 1, first_non_space - colon_pos - 1);
         else
-            // ���� ����� ':' ������ ������� - ������� ���
             line.erase(colon_pos + 1);
     }
 }
@@ -74,9 +71,8 @@ void removeSpaces(std::string& line) {
 std::vector<std::string> split(const std::string& input, char delimiter) {
     std::vector<std::string> tokens;
     std::string token;
-    std::stringstream ss(input); // ������� ��������� ����� �� ������� ������
+    std::stringstream ss(input);
 
-    // � ����� ��������� ������, ����������� 'delimiter'
     while (std::getline(ss, token, delimiter))
         tokens.push_back(token);
 
@@ -178,9 +174,51 @@ OsuFile parseOsuFile(const fs::path& path) {
     return osufile;
 }
 
-static bool fromMinToMax(const HitObject& first, const HitObject& second) {
+static bool fromMinToMaxHitObject(const HitObject& first, const HitObject& second) {
     return first.time < second.time;
 }
+static bool fromMinToMaxTimingPoint(const TimingPoint& first, const TimingPoint& second) {
+    return first.time < second.time;
+}
+
+std::vector<TimingPoint> parseTimingPoints(const fs::path& path) {
+    std::ifstream file(path);
+    std::string line;
+    std::vector<TimingPoint> timingPoints;
+    bool readtimings = false;
+
+    while (std::getline(file, line)) {
+        if (readtimings) {
+            std::vector<std::string> params = split(line, ',');
+            if (params.size() < 1) break;
+            TimingPoint timingPoint;
+            timingPoint.time = stoi(params.at(0));
+            timingPoint.beatLength = stof(params.at(1));
+            timingPoint.meter = stoi(params.at(2));
+            timingPoint.sampleSet = stoi(params.at(3));
+            timingPoint.sampleIndex = stoi(params.at(4));
+            timingPoint.volume = stoi(params.at(5));
+            timingPoint.uninherited = stoi(params.at(6));
+            timingPoint.effects = stoi(params.at(7));
+            timingPoints.emplace_back(timingPoint);
+            // std::cout << timingPoint << '\n';
+        }
+        
+        if (line.find("[TimingPoints]") != std::string::npos) {
+            readtimings = true;
+        }
+        
+        if (line.find("[HitObjects]") != std::string::npos) {
+            readtimings = false;
+            break;
+        }
+    }
+    file.close();
+
+    std::sort(timingPoints.begin(), timingPoints.end(), fromMinToMaxTimingPoint);
+
+    return timingPoints;
+};
 
 std::vector<HitObject> parseHitObjects(const fs::path& path) {
     std::ifstream file(path);
@@ -244,7 +282,7 @@ std::vector<HitObject> parseHitObjects(const fs::path& path) {
     }
     hitobjects.insert(hitobjects.end(), newObjects.begin(), newObjects.end());
     // sorted
-    std::sort(hitobjects.begin(), hitobjects.end(), fromMinToMax);
+    std::sort(hitobjects.begin(), hitobjects.end(), fromMinToMaxHitObject);
     //
     return hitobjects;
 };
