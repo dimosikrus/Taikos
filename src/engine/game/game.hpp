@@ -103,13 +103,31 @@ public:
 	}
 };
 
+class DrawableObjText {
+	sf::Vector2f pos;
+	sf::Font& font;
+	sf::Text text;
+public:
+	DrawableObjText (sf::Vector2f position, sf::Font& font, std::string text) :
+			pos(position), font(font), text(font, text) {
+		this->pos = sf::Vector2f(pos.x, pos.y + 60.f);
+		this->text.setPosition(pos);
+	}
+
+	void draw(sf::RenderWindow& window) {
+		window.draw(text);
+	}
+};
+
 class Game {
 	OsuFile& osufile;
 	GameState& localState;
 	ConfigFile& configFile;
 	int offset = 0;
 	std::deque<DrawableObj> drawable;
+	std::deque<DrawableObjText> drawabletext;
 	std::vector<HitObject> hitobjects;
+	std::vector<std::string> hitobjectstext;
 	std::vector<TimingPoint> timingPoints;
 	std::vector<HitCirclesEffect> hitCirclesEffect;
 	Audio& audio;
@@ -190,9 +208,9 @@ class Game {
 
 	sf::Texture hct;
 	sf::Texture hcot;
-	float bpm = 1.f;
-	float showBpm = 1.f;
-	float speed = 1.f;
+	float bpm = 50.f;
+	float showBpm = 50.f;
+	float speed = 50.f;
 public:
 	int REDS = 0,
 		BLUES = 0,
@@ -291,6 +309,9 @@ public:
 		for (size_t i = drawable.size(); i > 0; i--) {
 			drawable.at(i-1).draw(window);
 		}
+		for (size_t i = drawabletext.size(); i > 0; i--) {
+			drawabletext.at(i-1).draw(window);
+		}
 		// for (size_t i = 0; i < drawable.size(); i++) {
 		// 	drawable.at(i).draw(window);
 		// }
@@ -325,7 +346,7 @@ public:
 		score.score = 0;
 		audioStarted = false;
 		atimerStarted = false;
-		bpm = 1.f;
+		bpm = 50.f;
 		for (auto& hobj : hitobjects) {
 			hobj.hitted = false;
 			hobj.next = false;
@@ -415,6 +436,7 @@ public:
 		}
 
 		drawable.clear();
+		drawabletext.clear();
 		ofScanning = true;
 		// bool first = true;
 		int index = offset;
@@ -562,6 +584,7 @@ public:
 
 			if (!hobj.hitted && drawCoords.x <= 1280.f && hitobjectNum <= hitobjectLimiter) {
 			// if (!hobj.hitted && drawCoords.x <= 1280.f) {
+				drawabletext.emplace_back(drawCoords, font, hitobjectstext.at(index));
 				if ((hobj.type & Type::HitCircle) == Type::HitCircle) {
 					if (((hobj.hitSound & HitSound::Whistle) == HitSound::Whistle)
 						|| ((hobj.hitSound & HitSound::Clap) == HitSound::Clap)) {
@@ -609,26 +632,102 @@ public:
 		return getSelectedFromOsuFile(this->osufile);
 	}
 
+	void dod(float first, float second, float third) {
+		float ratio = (first - second) / third;
+		if (abs(ratio - 1.f/1.f) < 0.01f) 		  	{ hitobjectstext.push_back("1/1");
+		} else if (abs(ratio - 1.f/2.f) < 0.01f)  	{ hitobjectstext.push_back("1/2");
+		} else if (abs(ratio - 1.f/3.f) < 0.01f)  	{ hitobjectstext.push_back("1/3");
+		} else if (abs(ratio - 1.f/4.f) < 0.01f)  	{ hitobjectstext.push_back("1/4");
+		} else if (abs(ratio - 1.f/5.f) < 0.01f)  	{ hitobjectstext.push_back("1/5");
+		} else if (abs(ratio - 1.f/6.f) < 0.01f)  	{ hitobjectstext.push_back("1/6");
+		} else if (abs(ratio - 1.f/7.f) < 0.01f)  	{ hitobjectstext.push_back("1/7");
+		} else if (abs(ratio - 1.f/8.f) < 0.01f)  	{ hitobjectstext.push_back("1/8");
+		} else if (abs(ratio - 1.f/9.f) < 0.01f)  	{ hitobjectstext.push_back("1/9");
+		} else if (abs(ratio - 1.f/12.f) < 0.01f) 	{ hitobjectstext.push_back("1/12");
+		} else if (abs(ratio - 1.f/16.f) < 0.01f) 	{ hitobjectstext.push_back("1/16");
+		} else 									  	{ hitobjectstext.push_back("");
+		}
+	};
+
 	void load(OsuFile& osufile) {
 		std::cout << "Selected: " << getSelectedFromOsuFile(osufile) << '\n';
 		this->osufile = osufile;
 		hitobjects = std::move(parseHitObjects(osufile.filepath));
 		timingPoints = std::move(parseTimingPoints(osufile.filepath));
-		for(HitObject& hobj : hitobjects) {
-			for(TimingPoint& tp : timingPoints) {
-				if (hobj.time >= tp.time && tp.uninherited) {
-					hobj.bpm = tp.beatLength;
+		std::vector<TimingPoint> tpttttt;
+		// for(TimingPoint& tp : timingPoints) {
+		// 	for(HitObject& hobj : hitobjects) {
+		// 		if (hobj.time >= tp.time && tp.uninherited) {
+		// 			hobj.bpm = tp.beatLength;
+		// 			hobj.showBpm = hobj.bpm;
+		// 			hobj.speed = hobj.bpm * .004f;
+		// 			// std::cout << "TIMING: " << hobj.speed << " TP: " << tp << '\n';
+		// 		} else if (hobj.time >= tp.time && !tp.uninherited) {
+		// 			hobj.showBpm = hobj.bpm * ((tp.beatLength + 200) * .01f);
+		// 			hobj.speed = hobj.bpm * .004f;
+		// 			// std::cout << "INHERITED: " << hobj.speed << " TP: " << tp << '\n';
+		// 		}
+		// 	}
+		// 	if (tp.uninherited) {
+		// 		tpttttt.emplace_back(tp);
+		// 	}
+		// };
+
+		TimingPoint tppw = timingPoints.back();
+		tppw.time += hitobjects.back().time;
+		timingPoints.emplace_back(tppw);
+
+		float beatLengthnowUninherited = 0.f;
+
+		for (size_t tpi = 0; tpi < timingPoints.size()-1; tpi++) {
+			for(HitObject& hobj : hitobjects) {
+				if (hobj.time >= timingPoints.at(tpi).time && timingPoints.at(tpi).uninherited) { // && hobj.time < timingPoints.at(tpi + 1).time 
+					hobj.bpm = timingPoints.at(tpi).beatLength;
+					if (hobj.bpm < 51.f) {
+						hobj.bpm = 200.f;
+					}
 					hobj.showBpm = hobj.bpm;
 					hobj.speed = hobj.bpm * .004f;
-					// std::cout << "TIMING: " << hobj.speed << " TP: " << tp << '\n';
-				} else if (hobj.time >= tp.time && !tp.uninherited) {
-					hobj.showBpm = hobj.bpm * ((tp.beatLength + 200) * .01f);
-					hobj.speed = hobj.bpm * .004f;
-					// std::cout << "INHERITED: " << hobj.speed << " TP: " << tp << '\n';
+					beatLengthnowUninherited = hobj.bpm;
+				} else if (hobj.time >= timingPoints.at(tpi).time && !timingPoints.at(tpi).uninherited) { // && hobj.time < timingPoints.at(tpi + 1).time
+					if (beatLengthnowUninherited < 51.f) {
+						hobj.bpm = 150.f;
+						hobj.showBpm = hobj.bpm * ((timingPoints.at(tpi).beatLength + 200) * .01f);
+						// std::cout << "AAAA " << hobj.time << " BBB " << hobj.bpm << " CI " << hobj.showBpm << '\n';
+					} else {
+						hobj.showBpm = beatLengthnowUninherited * ((timingPoints.at(tpi).beatLength + 200) * .01f);
+					}
+					hobj.speed = hobj.showBpm * .004f;
+				}
+			}
+			if (timingPoints.at(tpi).uninherited) {
+				tpttttt.emplace_back(timingPoints.at(tpi));
+			}
+		}
+		for(HitObject& hobj : hitobjects) {
+			if (hobj.bpm < 2.f) {
+				std::cout << hobj << '\n';
+			}
+		}
+
+		TimingPoint tppe = tpttttt.back();
+		tppe.time += hitobjects.back().time;
+		tpttttt.emplace_back(tppe);
+
+		for (size_t tpi = 0; tpi < tpttttt.size()-1; tpi++) {
+			// std::cout << "AA | " << tpi << " | " << tpttttt.at(tpi).time << '\n';
+			for (size_t i = 0; i < hitobjects.size() - 1; i++) {
+				if (hitobjects.at(i).time >= tpttttt.at(tpi).time && hitobjects.at(i).time < tpttttt.at(tpi + 1).time) {
+					// std::cout << "B | " << tpttttt.at(tpi).time << " | " << hitobjects.at(i).time << '\n';
+					dod(static_cast<float>(hitobjects.at(i+1).time),static_cast<float>(hitobjects.at(i).time),tpttttt.at(tpi).beatLength);
 				}
 			}
 		}
-		//
+
+		hitobjectstext.push_back("");
+
+		std::cout << "CC| " << timingPoints.size() << " | " << hitobjects.size() << " | " << hitobjectstext.size() << " | " << tpttttt.size() << " | " << '\n';
+
 		startOffset = 0;
 		int firstObjPos = hitobjects.at(0).time;
 		//

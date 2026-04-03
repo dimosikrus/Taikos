@@ -19,8 +19,7 @@
 > ```
 > 
 ## Known Issues
-> If Game show you error with error vcruntime / ucrtbase / msvcp / etc.
-> Just copy .dll files from `./dlls32bit/Debug` or `./dlls32bit/Release`
+> idk
 ## Controls
 > ```
 > ESC                      - back (or pause/unpause ingame)
@@ -35,19 +34,6 @@
 > F5                       - Update Config (showing in game (Ka and Don)) (Volume not changing from config)
 > Out from window          - Auto Up Keys & Auto pause gameplay
 > ```
-## TODO
-```diff
-+ Settings
-- Fix Volume
-+ Conveyor
-+ Scrolling Speed
-+ BackGrounds
-+ New Song Select Menu
-+ Rework Engine
-+ Cmake builds on another systems (Linux / MacOS)
-+ Stars / Performance Calculator
-+ Accuracy Counter
-```
 ## Images
 <img width="1280" height="720" alt="image" src="https://github.com/user-attachments/assets/f7994f79-fb7b-4793-93f1-c4337e7e3a0c" />
 <img width="1280" height="720" alt="image" src="https://github.com/user-attachments/assets/00c18d9c-ac0e-4c72-9836-4d81ce70b3f7" />

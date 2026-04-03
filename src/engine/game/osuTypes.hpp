@@ -88,9 +88,9 @@ struct HitObject {
     int endTime = 0; // Spinner;
     bool spinnerTail = false;
     bool sliderTail = false;
-    float speed = 1.f;
-    float bpm = 1.f;
-    float showBpm = 1.f;
+    float speed = 50.f;
+    float bpm = 50.f;
+    float showBpm = 50.f;
 };
 
 struct TimingPoint {
