@@ -10,7 +10,7 @@
 
 #include "../gamestates.hpp"
 #include "../filesystem/filesystem.hpp"
-#include "../audio/audio.hpp"
+#include "../audiosfml/audio.hpp"
 #include "../game/game.hpp"
 #include "../animations/animations.hpp"
 
@@ -143,7 +143,7 @@ class SongSelectionMenu {
     const int limit = 11;
     GameState& localstate;
     Game& localGame;
-    Audio& audio;
+    AudioEngine& audio;
 
     void update(int lim) {
         buttons.clear();
@@ -171,7 +171,7 @@ class SongSelectionMenu {
         }
     }
 public:
-    SongSelectionMenu(sf::Font& font, GameState& state, Audio& audio, Game& game) :
+    SongSelectionMenu(sf::Font& font, GameState& state, AudioEngine& audio, Game& game) :
                     font(font), localstate(state), audio(audio), localGame(game) {
         osusPaths = std::move(listDirOsus(get_executable_path() / fs::path("Songs")));
 

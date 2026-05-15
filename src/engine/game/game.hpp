@@ -5,7 +5,7 @@
 #include <deque>
 #include <memory>
 #include <cmath>
-#include "../audio/audio.hpp"
+#include "../audiosfml/audio.hpp"
 #include "../gamestates.hpp"
 #include "osuTypes.hpp"
 #include "resultScreen.hpp"
@@ -130,7 +130,7 @@ class Game {
 	std::vector<std::string> hitobjectstext;
 	std::vector<TimingPoint> timingPoints;
 	std::vector<HitCirclesEffect> hitCirclesEffect;
-	Audio& audio;
+	AudioEngine& audio;
 	int startOffset = 0;
 	bool audioStarted = false;
 	bool atimerStarted = false;
@@ -218,7 +218,7 @@ public:
 	int comboMissBuffer = 0;
 	Score score;
 
-	Game(Audio& audio, OsuFile& osufile, sf::Font& font, ResultScreen& results, GameState& state, sf::RenderWindow& window, ConfigFile& configFile) : audio(audio), window(window), osufile(osufile), font(font), text1(font), text2(font), text3(font),
+	Game(AudioEngine& audio, OsuFile& osufile, sf::Font& font, ResultScreen& results, GameState& state, sf::RenderWindow& window, ConfigFile& configFile) : audio(audio), window(window), osufile(osufile), font(font), text1(font), text2(font), text3(font),
 			centerRect({ 4.f, 140.f }), /*centerRectH({ 1280.f, 4.f }),*/ x0Rect({ 140.f, 60.f }), x50Rect({ 110.f, 60.f }), x100Rect({ 80.f, 60.f }), x300Rect({ 40.f, 60.f }),
 			localResults(results), localState(state), configFile(configFile), horRect1({ 1280.f, 4.f }), horRect2({ 1280.f, 4.f }),
 			key1r({ 30.f, 4.f }), key2r({ 30.f, 4.f }), key3r({ 30.f, 4.f }), key4r({ 30.f, 4.f }) {
@@ -366,7 +366,7 @@ public:
 	}
 
 	void update(float dt) {
-		if (audio.getMusicPos() - 727 > hitobjects.back().time) {
+		if (audio.getAudioOffset().asMilliseconds() - 727 > hitobjects.back().time) {
 			gameIsRunning = false;
 			std::cout << "Map is End." << "\n";
 			localState = GameState::GameResults;
@@ -400,7 +400,8 @@ public:
 				}
 				audio.loadAudio(osufile.filepath.parent_path() / osufile.audioFileName);
 				audio.playAudio();
-				audio.setPos(static_cast<double>(startOffset)/1000);
+				// audio.setPos(static_cast<double>(startOffset)/1000);
+				audio.setAudioOffset(sf::milliseconds(startOffset));
 				audioStarted = true;
 			}
 		}
@@ -432,7 +433,7 @@ public:
 
 		switch (audioStarted) {
 			case false: audioPos = prevTimer.getElapsedTime().asMilliseconds() - startOffset; break;
-			default: audioPos = audio.getMusicPos(); break;
+			default: audioPos = audio.getAudioOffset().asMilliseconds(); break;
 		}
 
 		drawable.clear();
@@ -584,7 +585,9 @@ public:
 
 			if (!hobj.hitted && drawCoords.x <= 1280.f && hitobjectNum <= hitobjectLimiter) {
 			// if (!hobj.hitted && drawCoords.x <= 1280.f) {
-				drawabletext.emplace_back(drawCoords, font, hitobjectstext.at(index));
+				if (hitobjectstext.size() > 15) {
+					drawabletext.emplace_back(drawCoords, font, hitobjectstext.at(index));
+				}
 				if ((hobj.type & Type::HitCircle) == Type::HitCircle) {
 					if (((hobj.hitSound & HitSound::Whistle) == HitSound::Whistle)
 						|| ((hobj.hitSound & HitSound::Clap) == HitSound::Clap)) {
@@ -763,9 +766,9 @@ class VolumeGraph {
 	sf::RectangleShape musicRect;
 	sf::Clock clock;
 	bool showing = false;
-	Audio& localaudio;
+	AudioEngine& localaudio;
 public:
-	VolumeGraph(Audio& audio) : localaudio(audio) {
+	VolumeGraph(AudioEngine& audio) : localaudio(audio) {
 		soundRect.setSize(sf::Vector2f(10, 300));
 		musicRect.setSize(sf::Vector2f(10, 300));
 
@@ -796,13 +799,13 @@ public:
 				showing = false;
 			}
 
-			float sVol = localaudio.getSoundVolume();
-			soundRect.setSize(sf::Vector2f(10, 300 * sVol ? 300 * sVol : 2));
-			soundRect.setPosition({ 1270, 720 - 300 * sVol ? 720 - 300 * sVol : 2 });
+			float sVol = localaudio.getSoundsVolume();
+			soundRect.setSize(sf::Vector2f(10, 300 * (sVol/100.f) ? 300 * (sVol/100.f) : 2));
+			soundRect.setPosition({ 1270, 720 - 300 * (sVol/100.f) ? 720 - 300 * (sVol/100.f) : 2 });
 
-			float aVol = localaudio.getMusicVolume();
-			musicRect.setSize(sf::Vector2f(10, 300 * aVol ? 300 * aVol : 2));
-			musicRect.setPosition({ 1258, 720 - 300 * aVol ? 720 - 300 * aVol : 2 });
+			float aVol = localaudio.getAudioVolume();
+			musicRect.setSize(sf::Vector2f(10, 300 * (aVol/100.f) ? 300 * (aVol/100.f) : 2));
+			musicRect.setPosition({ 1258, 720 - 300 * (aVol/100.f) ? 720 - 300 * (aVol/100.f) : 2 });
 		}
 		else {
 			if (clock.isRunning()) {

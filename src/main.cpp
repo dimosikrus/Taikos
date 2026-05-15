@@ -6,7 +6,8 @@ using fn = int;
 #include <SFML/Graphics.hpp>
 
 #include "engine/gamestates.hpp"
-#include "engine/audio/audio.hpp"
+// #include "engine/audio/audio.hpp"
+#include "engine/audiosfml/audio.hpp"
 #include "engine/filesystem/filesystem.hpp"
 // #include "menu/menu.hpp"
 #include "engine/menu/menu.hpp"
@@ -97,7 +98,7 @@ public:
 };
 
 static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
-            sf::Vector2f& mousePosition, Audio& audio, GameState& gameState,
+            sf::Vector2f& mousePosition, AudioEngine& audio, GameState& gameState,
             SpecialState& specialState, FloatingMenu& flmenu, SongSelectionMenu& ssm,
             Game& game, VolumeGraph& volGraph, ConfigFile& configfile) {
     sf::Mouse::Button mButton;
@@ -131,13 +132,13 @@ static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
             }
             if (specialState == SpecialState::Alt) {
                 volGraph.show();
-                if (scrolled > 0) audio.upAudioVol();
-                else if (scrolled < 0) audio.downAudioVol();
+                if (scrolled > 0) audio.upAudioVolume();
+                else if (scrolled < 0) audio.downAudioVolume();
             }
             if (specialState == SpecialState::Control) {
                 volGraph.show();
-                if (scrolled > 0) audio.upSoundsVol();
-                else if (scrolled < 0) audio.downSoundsVol();
+                if (scrolled > 0) audio.upSoundsVolume();
+                else if (scrolled < 0) audio.downSoundsVolume();
             }
         }
     }
@@ -182,12 +183,12 @@ static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
                 }
                 break;
             case sf::Keyboard::Key::R:
-                audio.resetPos();
+                audio.resetAudioOffset();
                 game.reset();
                 break;
             case sf::Keyboard::Key::S:
                 // audio.playSound("hitZ");
-                taps.time = audio.getMusicPos();
+                taps.time = audio.getAudioOffset().asMilliseconds();
                 taps.hs = HitSound::Whistle;
                 taps.down = TapsDir::Down;
                 taps.key = KeyssKey::LK;
@@ -195,7 +196,7 @@ static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
                 break;
             case sf::Keyboard::Key::D:
                 // audio.playSound("hitX");
-                taps.time = audio.getMusicPos();
+                taps.time = audio.getAudioOffset().asMilliseconds();
                 taps.hs = HitSound::Normal;
                 taps.down = TapsDir::Down;
                 taps.key = KeyssKey::LD;
@@ -203,7 +204,7 @@ static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
                 break;
             case sf::Keyboard::Key::K:
                 // audio.playSound("hitX");
-                taps.time = audio.getMusicPos();
+                taps.time = audio.getAudioOffset().asMilliseconds();
                 taps.hs = HitSound::Normal;
                 taps.down = TapsDir::Down;
                 taps.key = KeyssKey::RD;
@@ -211,15 +212,15 @@ static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
                 break;
             case sf::Keyboard::Key::L:
                 // audio.playSound("hitZ");
-                taps.time = audio.getMusicPos();
+                taps.time = audio.getAudioOffset().asMilliseconds();
                 taps.hs = HitSound::Whistle;
                 taps.down = TapsDir::Down;
                 taps.key = KeyssKey::RK;
                 game.pushTap(taps);
                 break;
-            case sf::Keyboard::Key::U:
-                audio.setPos(audio.GetMusicLengthD_S() - 2.0);
-                break;
+            // case sf::Keyboard::Key::U:
+            //     audio.setPos(audio.GetMusicLengthD_S() - 2.0);
+            //     break;
             case sf::Keyboard::Key::Up: ssm.up(); break;
             case sf::Keyboard::Key::Down: ssm.down(); break;
             case sf::Keyboard::Key::LAlt: specialState = SpecialState::Alt; break;
@@ -244,28 +245,28 @@ static void events(std::optional<sf::Event> event, sf::RenderWindow& window,
         Taps taps;
         switch(code) {
             case sf::Keyboard::Key::S:
-                taps.time = audio.getMusicPos();
+                taps.time = audio.getAudioOffset().asMilliseconds();
                 taps.hs = HitSound::Whistle;
                 taps.down = TapsDir::Up;
                 taps.key = KeyssKey::LK;
                 game.pushTap(taps);
                 break;
             case sf::Keyboard::Key::D:
-                taps.time = audio.getMusicPos();
+                taps.time = audio.getAudioOffset().asMilliseconds();
                 taps.hs = HitSound::Normal;
                 taps.down = TapsDir::Up;
                 taps.key = KeyssKey::LD;
                 game.pushTap(taps);
                 break;
             case sf::Keyboard::Key::K:
-                taps.time = audio.getMusicPos();
+                taps.time = audio.getAudioOffset().asMilliseconds();
                 taps.hs = HitSound::Normal;
                 taps.down = TapsDir::Up;
                 taps.key = KeyssKey::RD;
                 game.pushTap(taps);
                 break;
             case sf::Keyboard::Key::L:
-                taps.time = audio.getMusicPos();
+                taps.time = audio.getAudioOffset().asMilliseconds();
                 taps.hs = HitSound::Whistle;
                 taps.down = TapsDir::Up;
                 taps.key = KeyssKey::RK;
@@ -292,8 +293,8 @@ fn main() {
     logger.log(LogLevel::ERR, "ERROR Logger");
     logger.log(LogLevel::DEBUG, "DEBUG Logger");
 
-    Audio audio;
-    audio.loadDefault();
+    AudioEngine audio;
+    // audio.loadDefault();
     ConfigFile configFile;
     audio.setSoundsVolume(configFile.getSoundsVol());
     audio.setAudioVolume(configFile.getMisucVol());
@@ -359,7 +360,6 @@ fn main() {
         ffpss.update();
         clock.start();
         while (std::optional<sf::Event> event = window.pollEvent()) events(event, window, mousePosition, audio, gameState, specialState, flmenu, ssm, game, volGraph, configFile);
-        //audio.updateEngine();
         window.clear(sf::Color::Black);
 
         pushValueFpS(mss, 10, dt);
